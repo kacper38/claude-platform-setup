@@ -16,8 +16,8 @@ for s in "$HERE"/skills/*/; do
 done
 
 echo "Installed to $DEST:"
-echo "  agents: $(ls "$HERE/agents" | sed 's/\.md$//' | paste -sd ', ' -)"
-echo "  skills: $(ls "$HERE/skills" | paste -sd ', ' -)"
+echo "  agents: $(ls "$HERE/agents" | sed 's/\.md$//' | tr '\n' ' ')"
+echo "  skills: $(ls "$HERE/skills" | tr '\n' ' ')"
 echo ""
 echo "New task: start Claude Code in the task repo and run /task-intake."
 echo "Working agreement to copy into the task repo: $HERE/CLAUDE.md"
