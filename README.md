@@ -54,13 +54,27 @@ Execution bench:
 | `/post-mortem` | After an incident — blameless write-up with owners and a validation note |
 
 Plus general support: `verify`, `code-review`, `pr-prep`, `systematic-debugging`,
-`verification-before-completion`, `ponytail-review`.
+`verification-before-completion`.
+
+Anti-over-engineering (the lazy family):
+
+| Skill | When |
+|---|---|
+| `/ponytail` | Lazy mode for the whole session — the YAGNI → stdlib → native → installed-dep → one-line ladder (`lite\|full\|ultra`) |
+| `/ponytail-review` | Review the current diff for things to DELETE: reinvented stdlib, unneeded deps, speculative abstractions |
+| `/ponytail-audit` | Same lens over the whole repo — ranked by removable lines/deps |
+| `/ponytail-debt` | Harvest `ponytail:` markers into a debt ledger with upgrade triggers |
 
 ## Working agreement
 
 [`CLAUDE.md`](CLAUDE.md) — eight non-negotiables (plan first, small steps,
 evidence over claims, DECISIONS.md, regulated context, security reflexes,
-named gaps, back out of bad paths). `/task-intake` copies it into the task repo.
+named gaps, back out of bad paths) plus the four Karpathy coding principles
+(think before coding, simplicity first, surgical changes, goal-driven
+execution — adapted from
+[andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills)).
+`/task-intake` copies it into the task repo, so the principles are always
+active where you work.
 
 A one-page visual overview lives in
 [`setup-overview.html`](setup-overview.html) (Polish).

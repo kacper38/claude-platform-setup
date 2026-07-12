@@ -33,6 +33,25 @@ QA team or an auditor. You (Claude) execute; Kacper reviews and decides.
 8. **Wrong path → back out.** Prefer `git restore` / a fresh approach over
    patching a bad direction. Say so out loud.
 
+## Coding principles (Karpathy)
+
+Bias toward caution over speed; for trivial tasks use judgment.
+
+1. **Think before coding.** State assumptions explicitly; if multiple
+   interpretations exist, present them — don't pick silently. If something is
+   unclear, stop and ask. If a simpler approach exists, say so.
+2. **Simplicity first.** Minimum code that solves the problem: no speculative
+   features, no abstractions for single-use code, no unrequested
+   configurability. If 200 lines could be 50, rewrite it.
+3. **Surgical changes.** Touch only what you must; match existing style; don't
+   "improve" adjacent code. Every changed line traces to the request. Clean up
+   only what YOUR change made unused.
+4. **Goal-driven execution.** Convert tasks into verifiable success criteria
+   ("fix the bug" → "write a failing test that reproduces it, make it pass")
+   and loop until verified.
+
+(Adapted from github.com/multica-ai/andrej-karpathy-skills, MIT.)
+
 ## Working files (create at task intake)
 
 - `README.md` — goal, scope, what this does NOT do and why, how to run
