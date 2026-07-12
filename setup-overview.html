@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOP-KZ-001 — GxP Platform Engineer · Production Dev Setup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4f0e6;
+    --paper-dark:#ece7d9;
+    --ink:#1c1f2a;
+    --ink-soft:#4a4e5c;
+    --rule:#c9c2ae;
+    --red:#a02c20;
+    --red-soft:#c05a4e;
+    --teal:#1f5f5b;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --display:'Fraunces',Georgia,serif;
+    --body:'Newsreader',Georgia,serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--body);
+    font-size:17px;
+    line-height:1.6;
+    position:relative;
+    overflow-x:hidden;
+  }
+  /* paper grain */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:2;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  /* legal-pad margin rule */
+  .sheet{
+    max-width:880px;margin:0 auto;padding:64px 56px 96px 108px;position:relative;
+  }
+  .sheet::before{
+    content:"";position:absolute;top:0;bottom:0;left:76px;width:1px;
+    background:var(--red-soft);opacity:.55;
+  }
+  .sheet::after{
+    content:"";position:absolute;top:0;bottom:0;left:80px;width:1px;
+    background:var(--red-soft);opacity:.25;
+  }
+
+  /* ---------- masthead ---------- */
+  header{position:relative;padding-bottom:36px;border-bottom:3px double var(--ink);margin-bottom:8px}
+  .doc-id{
+    font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-soft);display:flex;gap:1.6em;flex-wrap:wrap;margin-bottom:26px;
+  }
+  .doc-id b{color:var(--red);font-weight:600}
+  h1{
+    font-family:var(--display);font-weight:900;font-size:clamp(42px,7vw,68px);
+    line-height:.98;letter-spacing:-.02em;
+    font-variation-settings:'opsz' 144;
+  }
+  h1 em{font-style:italic;font-weight:300;display:block;font-size:.55em;letter-spacing:0;margin-top:10px;color:var(--ink-soft)}
+  .stamp{
+    position:absolute;right:-8px;top:44px;transform:rotate(7deg);
+    font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--red);border:3px solid var(--red);border-radius:6px;padding:10px 16px;
+    box-shadow:inset 0 0 0 2px var(--paper), inset 0 0 0 3px var(--red);
+    opacity:.85;mix-blend-mode:multiply;
+    animation:stampIn .5s cubic-bezier(.2,1.6,.4,1) .9s backwards;
+  }
+  @keyframes stampIn{from{transform:rotate(7deg) scale(2.2);opacity:0}to{transform:rotate(7deg) scale(1);opacity:.85}}
+  .meta-table{width:100%;border-collapse:collapse;margin-top:30px;font-family:var(--mono);font-size:13px}
+  .meta-table td{border:1px solid var(--rule);padding:8px 12px;vertical-align:top}
+  .meta-table td:first-child{width:190px;text-transform:uppercase;letter-spacing:.1em;font-size:11px;color:var(--ink-soft);background:var(--paper-dark)}
+  .meta-table a{color:var(--teal);text-decoration:none;border-bottom:1px dotted var(--teal)}
+
+  /* ---------- sections ---------- */
+  section{margin-top:72px;position:relative}
+  .sec-num{
+    position:absolute;left:-104px;top:2px;width:88px;text-align:right;
+    font-family:var(--mono);font-size:12px;color:var(--red);letter-spacing:.1em;
+  }
+  h2{
+    font-family:var(--display);font-weight:600;font-size:30px;letter-spacing:-.01em;
+    margin-bottom:6px;
+  }
+  .sec-sub{font-family:var(--mono);font-size:12.5px;text-transform:uppercase;letter-spacing:.16em;color:var(--ink-soft);margin-bottom:26px}
+  p.lead{font-size:19px;font-weight:500;max-width:62ch}
+  .callout{
+    margin:26px 0;padding:18px 22px;border:1px solid var(--ink);
+    background:var(--paper-dark);position:relative;font-size:16.5px;
+  }
+  .callout::before{
+    content:"ZASADA";position:absolute;top:-9px;left:14px;background:var(--red);color:var(--paper);
+    font-family:var(--mono);font-size:10px;letter-spacing:.2em;padding:2px 8px;
+  }
+
+  /* tree */
+  pre.tree{
+    font-family:var(--mono);font-size:13.5px;line-height:1.7;background:var(--ink);color:#e8e4d8;
+    padding:26px 30px;overflow-x:auto;border-radius:2px;box-shadow:6px 6px 0 var(--paper-dark), 6px 6px 0 1px var(--rule);
+  }
+  pre.tree .dim{color:#8b8f9e}
+  pre.tree .hl{color:#ffb46e}
+  pre.tree .this{color:#7fd8c8;font-weight:600}
+
+  /* agent cards */
+  .agents{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--ink);border:1px solid var(--ink);margin-top:8px}
+  .agent{background:var(--paper);padding:22px 24px 24px;position:relative;transition:background .25s}
+  .agent:hover{background:var(--paper-dark)}
+  .agent .aid{font-family:var(--mono);font-size:11px;color:var(--red);letter-spacing:.18em}
+  .agent h3{font-family:var(--display);font-size:21px;font-weight:600;margin:6px 0 8px}
+  .agent p{font-size:15px;color:var(--ink-soft);line-height:1.55}
+  .agent .tools{font-family:var(--mono);font-size:11px;margin-top:14px;color:var(--teal);letter-spacing:.04em}
+  .agent .when{display:inline-block;font-family:var(--mono);font-size:11px;background:var(--ink);color:var(--paper);padding:3px 8px;margin-top:12px;letter-spacing:.08em}
+
+  /* timeline */
+  .timeline{margin-top:12px;border-left:2px solid var(--ink);padding-left:0;list-style:none}
+  .timeline li{position:relative;padding:20px 0 22px 34px;border-bottom:1px dashed var(--rule)}
+  .timeline li:last-child{border-bottom:none}
+  .timeline li::before{
+    content:"";position:absolute;left:-7px;top:30px;width:12px;height:12px;border-radius:50%;
+    background:var(--paper);border:3px solid var(--red);
+  }
+  .timeline .t{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--red);text-transform:uppercase}
+  .timeline .cmd{
+    font-family:var(--mono);font-weight:600;font-size:17px;margin:4px 0 6px;
+  }
+  .timeline .cmd .loop-badge{
+    font-size:10px;letter-spacing:.16em;vertical-align:3px;color:var(--paper);background:var(--teal);
+    padding:2px 7px;margin-left:10px;border-radius:2px;font-weight:500;
+  }
+  .timeline p{font-size:15.5px;color:var(--ink-soft);max-width:60ch}
+  .timeline .stages{font-family:var(--mono);font-size:12.5px;margin-top:10px;color:var(--ink);line-height:2}
+  .timeline .stages span{border:1px solid var(--rule);padding:2px 8px;margin-right:4px;white-space:nowrap;background:var(--paper-dark)}
+
+  /* terminal */
+  .term{
+    background:#12141c;color:#d7dae2;font-family:var(--mono);font-size:14px;line-height:1.9;
+    padding:24px 28px;border-radius:6px;margin-top:8px;
+    box-shadow:0 18px 40px -18px rgba(28,31,42,.55);
+  }
+  .term .bar{display:flex;gap:7px;margin-bottom:16px}
+  .term .bar i{width:11px;height:11px;border-radius:50%;background:#3a3f4f;display:block}
+  .term .bar i:first-child{background:var(--red-soft)}
+  .term .c{color:#6d7383}
+  .term .p{color:#7fd8c8}
+  .term .cmt{color:#6d7383;font-style:italic}
+
+  /* requirements */
+  .reqs{border-top:2px solid var(--ink);margin-top:10px}
+  .req{display:grid;grid-template-columns:110px 1fr;gap:20px;padding:16px 0;border-bottom:1px solid var(--rule);align-items:baseline}
+  .req .rid{font-family:var(--mono);font-size:12px;color:var(--red);letter-spacing:.12em}
+  .req b{font-weight:600}
+  .req p{font-size:15.5px;color:var(--ink-soft)}
+
+  /* golden phrase / footer */
+  .golden{
+    margin-top:80px;padding:44px 40px;background:var(--ink);color:var(--paper);position:relative;
+  }
+  .golden::before{
+    content:"ZASADA NADRZĘDNA";font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;
+    color:#ffb46e;display:block;margin-bottom:18px;
+  }
+  .golden blockquote{
+    font-family:var(--display);font-style:italic;font-weight:300;font-size:clamp(21px,3.4vw,28px);line-height:1.4;
+  }
+  .signoff{
+    margin-top:64px;display:grid;grid-template-columns:1fr 1fr;gap:40px;
+    font-family:var(--mono);font-size:12px;color:var(--ink-soft);
+  }
+  .signoff .line{border-top:1px solid var(--ink);padding-top:8px;margin-top:44px;letter-spacing:.1em;text-transform:uppercase}
+  .sig{font-family:var(--display);font-style:italic;font-size:26px;color:var(--ink);transform:rotate(-2deg);display:inline-block;margin-bottom:-30px}
+
+  /* reveal animation */
+  header .rv1{animation:rise .7s .05s backwards}
+  @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+  section:nth-of-type(1){animation:rise .7s .15s backwards}
+  section:nth-of-type(2){animation:rise .7s .25s backwards}
+  section:nth-of-type(3){animation:rise .7s .35s backwards}
+  section:nth-of-type(4){animation:rise .7s .45s backwards}
+  section:nth-of-type(5){animation:rise .7s .5s backwards}
+  section:nth-of-type(6){animation:rise .7s .55s backwards}
+
+  @media (max-width:760px){
+    .sheet{padding:44px 22px 80px 58px}
+    .sheet::before{left:40px}.sheet::after{left:44px}
+    .sec-num{left:-52px;width:40px;font-size:10px}
+    .agents{grid-template-columns:1fr}
+    .stamp{position:static;display:inline-block;margin-top:20px}
+    .signoff{grid-template-columns:1fr}
+  }
+  @media print{
+    body::before{display:none}
+    .term,pre.tree{box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header>
+    <div class="doc-id rv1">
+      <span>DOK. <b>SOP-KZ-001</b></span>
+      <span>WER. 2.0</span>
+      <span>OBOWIĄZUJE OD: 2026-07-11</span>
+      <span>KLASYFIKACJA: ROBOCZA</span>
+    </div>
+    <h1>Platform Engineer<em>production dev setup — AI infrastructure w środowisku GxP</em></h1>
+    <div class="stamp">Gotowe do pull ✓</div>
+    <table class="meta-table">
+      <tr><td>Repozytorium</td><td><a href="https://github.com/kacper38/claude-platform-setup">github.com/kacper38/claude-platform-setup</a> · branch <b>main</b></td></tr>
+      <tr><td>Zakres</td><td>Codzienna praca platformowa: od ticketu/zadania do działającej, audytowalnej infrastruktury (RAG/LLM, AWS/Azure)</td></tr>
+      <tr><td>Zasada</td><td>Ty decydujesz i weryfikujesz — agent wykonuje. Każda zmiana obronialna jako <em>validation evidence</em></td></tr>
+      <tr><td>Instalacja</td><td><code>./install.sh</code> → <code>~/.claude</code> (user scope)</td></tr>
+    </table>
+  </header>
+
+  <section>
+    <div class="sec-num">§ 01</div>
+    <h2>Zasada działania</h2>
+    <div class="sec-sub">Model pracy</div>
+    <p class="lead">Setup nie pisze za Ciebie — wymusza rytm pracy platform engineera w środowisku regulowanym: plan przed kodem, dowód przed deklaracją, decyzje na piśmie. Ten sam zestaw działa przy jednorazowym zadaniu i przy codziennej robocie u klienta.</p>
+    <div class="callout">
+      Żaden kod nie powstaje przed zatwierdzonym planem. Żaden commit nie przechodzi bez dowodu
+      (<span style="font-family:var(--mono);font-size:14px">docker build · pytest · terraform plan</span>).
+      Żadna decyzja nie ginie — każdy trade-off ląduje w <b>DECISIONS.md</b>.
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-num">§ 02</div>
+    <h2>Struktura repozytorium</h2>
+    <div class="sec-sub">Co jest gdzie po git clone</div>
+<pre class="tree">claude-platform-setup/
+├── <span class="hl">CLAUDE.md</span>            <span class="dim"># working agreement do repo zadania</span>
+├── <span class="hl">install.sh</span>           <span class="dim"># jeden skrypt → ~/.claude</span>
+├── agents/              <span class="dim"># 12 agentów (§ 03)</span>
+│   <span class="dim"># rdzeń: platform-planner · infra-reviewer · gxp-compliance-reviewer · rag-infra-advisor</span>
+│   <span class="dim"># ławka: python · shell · k8s · git · observability · postgres + code-reviewer · devops-automator</span>
+└── skills/              <span class="dim"># 12 skilli — cykl zadania (§ 04) + wsparcie</span>
+    <span class="dim"># task-intake · platform-flow · rag-stack · gxp-check · validation-evidence · post-mortem</span>
+    <span class="dim"># verify · code-review · pr-prep · systematic-debugging · verification-before-completion · ponytail-review</span></pre>
+  </section>
+
+  <section>
+    <div class="sec-num">§ 03</div>
+    <h2>Agenci</h2>
+    <div class="sec-sub">Rdzeń procesowo-compliance + ławka wykonawcza · delegowani przez Claude'a lub na żądanie</div>
+    <div class="agents">
+      <div class="agent">
+        <div class="aid">AG-01</div>
+        <h3>platform-planner</h3>
+        <p>Zamienia zadanie w plan: założenia, pytania do zamawiającego, kroki z komendą weryfikacyjną przy każdym, trade-offy, cut line. Nigdy nie pisze kodu.</p>
+        <div class="tools">tools: Read · Grep · Glob · Bash</div><br>
+        <div class="when">start zadania / nowy podproblem</div>
+      </div>
+      <div class="agent">
+        <div class="aid">AG-02</div>
+        <h3>infra-reviewer</h3>
+        <p>Review Dockerfile, GitHub Actions, Terraform i compose pod kątem poprawności: multi-stage, non-root, OIDC, least privilege, brak sekretów w state. Werdykt: commit-ready albo lista blockerów.</p>
+        <div class="tools">tools: Read · Grep · Glob · Bash</div><br>
+        <div class="when">po każdym artefakcie infra</div>
+      </div>
+      <div class="agent">
+        <div class="aid">AG-03</div>
+        <h3>gxp-compliance-reviewer</h3>
+        <p>Ten sam artefakt okiem audytora GAMP 5 z kompetencją DevOps: audit trail, ALCOA+, validation evidence, lineage danych w RAG, status Annex 22. Każdy review kończy zdaniem gotowym dla QA klienta.</p>
+        <div class="tools">tools: Read · Grep · Glob · Bash</div><br>
+        <div class="when">przed commitem / przed release</div>
+      </div>
+      <div class="agent">
+        <div class="aid">AG-04</div>
+        <h3>rag-infra-advisor</h3>
+        <p>Decyzje AI-infra: pgvector vs dedykowany silnik, prywatne endpointy LLM (VNet/VPC), wersjonowanie modelu+promptów+indeksu jako jednej jednostki, eval w CI, koszt-na-zapytanie, rezydencja danych CH/EU.</p>
+        <div class="tools">tools: Read · Grep · Glob · Bash</div><br>
+        <div class="when">każdy komponent dotykający LLM/RAG</div>
+      </div>
+      <div class="agent">
+        <div class="aid">AG-05</div>
+        <h3>python-engineer</h3>
+        <p>Produkcyjny Python: FastAPI z correlation ids, CLI, automatyzacje. uv + ruff + mypy + pytest; stdlib przed zależnością; async tylko tam, gdzie jest realne I/O do wygrania.</p>
+        <div class="tools">tools: Read · Grep · Glob · Bash · Edit · Write</div><br>
+        <div class="when">kod i review Pythona</div>
+      </div>
+      <div class="agent">
+        <div class="aid">AG-06</div>
+        <h3>shell-engineer</h3>
+        <p>Bash jak kod produkcyjny: set -euo pipefail, quoting, traps, mktemp/flock, shellcheck przed „gotowe". Wie, kiedy skrypt urósł i trzeba go przepisać na Pythona.</p>
+        <div class="tools">tools: Read · Grep · Glob · Bash · Edit · Write</div><br>
+        <div class="when">skrypty, kroki CI, cron</div>
+      </div>
+      <div class="agent">
+        <div class="aid">AG-07</div>
+        <h3>k8s-engineer</h3>
+        <p>Manifesty z probes/limits/securityContext, Kustomize/Helm, runbook debugowania (describe → logs --previous → events), EKS/AKS/k3s, GitOps — kubectl z ręki to break-glass.</p>
+        <div class="tools">tools: Read · Grep · Glob · Bash · Edit · Write</div><br>
+        <div class="when">K8s: budowa i „czemu pod nie wstaje"</div>
+      </div>
+      <div class="agent">
+        <div class="aid">AG-08</div>
+        <h3>git-surgeon</h3>
+        <p>Konflikty ze zrozumieniem obu stron, reflog-recovery, bisect z automatem testowym, chirurgia historii zawsze po backup-branchu. Signed commits + protected branches = audit trail.</p>
+        <div class="tools">tools: Read · Grep · Glob · Bash</div><br>
+        <div class="when">„zepsułem repo" / kto to popsuł</div>
+      </div>
+      <div class="agent">
+        <div class="aid">AG-09</div>
+        <h3>observability-engineer</h3>
+        <p>Prometheus/Grafana wyłącznie as code, alerty symptom-based (SLO burn budzi, dysk to ticket), RED/USE, correlation id przez cały łańcuch, metryki koszt-na-zapytanie dla LLM.</p>
+        <div class="tools">tools: Read · Grep · Glob · Bash · Edit · Write</div><br>
+        <div class="when">monitoring, alerty, „czemu nie było alertu"</div>
+      </div>
+      <div class="agent">
+        <div class="aid">AG-10</div>
+        <h3>postgres-engineer</h3>
+        <p>Migracje bez blokowania ruchu (CONCURRENTLY, NOT VALID→VALIDATE), EXPLAIN ANALYZE, backup istnieje dopiero po teście restore, RLS dla tenantów, tuning pgvector HNSW/IVFFlat.</p>
+        <div class="tools">tools: Read · Grep · Glob · Bash · Edit · Write</div><br>
+        <div class="when">baza: migracje, wydajność, backupy</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-num">§ 04</div>
+    <h2>Cykl zadania</h2>
+    <div class="sec-sub">Sześć skilli · od ticketu do audytowalnego release</div>
+    <ul class="timeline">
+      <li>
+        <div class="t">wejście · nowe zadanie</div>
+        <div class="cmd">/task-intake</div>
+        <p>Zadanie czytane 2×, spisane założenia i 3–5 pytań, scaffolding repo (README, DECISIONS.md, CLAUDE.md), plan od AG-01 — i <b>stop do zatwierdzenia</b>.</p>
+      </li>
+      <li>
+        <div class="t">budowa</div>
+        <div class="cmd">/platform-flow</div>
+        <p>Łańcuch od kodu do działania; jeden etap = jeden commit z weryfikacją.</p>
+        <div class="stages">
+          <span>1 local dev</span><span>2 Docker</span><span>3 CI</span><span>4 Terraform</span><span>5 CD</span><span>6 observability</span><span>7 security</span>
+        </div>
+      </li>
+      <li>
+        <div class="t">komponent AI</div>
+        <div class="cmd">/rag-stack</div>
+        <p>pgvector w compose i w Terraformie, schema z traceability (które źródła zasiliły którą odpowiedź), idempotentna ingestia, prywatne endpointy LLM, metryka kosztu i eval na golden secie w CI.</p>
+      </li>
+      <li>
+        <div class="t">przed każdym większym commitem</div>
+        <div class="cmd">/gxp-check <span class="loop-badge">PĘTLA</span></div>
+        <p>Mechaniczny sweep: sekrety, tagi <code style="font-family:var(--mono);font-size:13px">latest</code>, wildcard IAM, brak HEALTHCHECK — każde znalezisko zmapowane na słownik GxP („to łamie Attributable, bo…").</p>
+      </li>
+      <li>
+        <div class="t">release / handoff</div>
+        <div class="cmd">/validation-evidence</div>
+        <p>Pack dowodowy generowany z realnych artefaktów: macierz requirement → implementacja → test, zrzuty outputów checków, change trail (commity, PR, approvals), jawna lista luk. QA klienta ocenia w 5 minut.</p>
+      </li>
+      <li>
+        <div class="t">po incydencie</div>
+        <div class="cmd">/post-mortem</div>
+        <p>Blameless write-up: oś czasu z logów, wpływ vs SLO + linia „data integrity: tak/nie", root cause procesowy, akcje z właścicielami i notą walidacyjną.</p>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="sec-num">§ 05</div>
+    <h2>Instalacja</h2>
+    <div class="sec-sub">Na dowolnym laptopie · ~60 sekund</div>
+    <div class="term">
+      <div class="bar"><i></i><i></i><i></i></div>
+      <div><span class="p">$</span> git clone https://github.com/kacper38/claude-platform-setup.git</div>
+      <div><span class="p">$</span> ./claude-platform-setup/install.sh</div>
+      <div class="cmt">  # → ~/.claude: 6 agentów, 12 skilli (w tym verify, code-review, pr-prep,</div>
+      <div class="cmt">  #   systematic-debugging, verification-before-completion, ponytail-review)</div>
+      <div><span class="p">$</span> cd &lt;repo-zadania&gt; <span class="c">&amp;&amp;</span> claude</div>
+      <div><span class="p">&gt;</span> /task-intake   <span class="cmt"># wklej treść zadania — reszta się dzieje</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-num">§ 06</div>
+    <h2>Working agreement</h2>
+    <div class="sec-sub">CLAUDE.md · wymagania niezbywalne</div>
+    <div class="reqs">
+      <div class="req"><span class="rid">REQ-01</span><p><b>Plan first.</b> Plan z założeniami przed jakimkolwiek kodem — nawet przy „drobnych" zmianach.</p></div>
+      <div class="req"><span class="rid">REQ-02</span><p><b>Małe kroki.</b> Jeden temat = jeden commit, imperatywny message.</p></div>
+      <div class="req"><span class="rid">REQ-03</span><p><b>Dowód, nie deklaracja.</b> Każda zmiana zweryfikowana zewnętrznie, output pokazany.</p></div>
+      <div class="req"><span class="rid">REQ-04</span><p><b>DECISIONS.md.</b> Każdy trade-off: decyzja — dlaczego — co by ją zmieniło.</p></div>
+      <div class="req"><span class="rid">REQ-05</span><p><b>Kontekst regulowany.</b> Pipeline sam generuje audit-grade evidence: git, testy, IaC, approvals.</p></div>
+      <div class="req"><span class="rid">REQ-06</span><p><b>Odruchy security.</b> Sekrety w vaulcie · OIDC zamiast kluczy · least privilege · non-root · tag = SHA · dane klienta w granicy.</p></div>
+      <div class="req"><span class="rid">REQ-07</span><p><b>Nazwij, co odpuszczasz.</b> Szkielet vs production-grade — jawnie, z triggerem upgrade'u w DECISIONS.md.</p></div>
+      <div class="req"><span class="rid">REQ-08</span><p><b>Zła ścieżka → cofnij.</b> <code style="font-family:var(--mono);font-size:13.5px">git restore</code> i nowy plan zamiast brnięcia.</p></div>
+    </div>
+  </section>
+
+  <div class="golden">
+    <blockquote>„Nie przyjmuję outputu w ciemno — każdy diff przechodzi review, każda zmiana ma test albo plan jako dowód, bo w GxP każdą zmianę trzeba umieć obronić jako validation evidence."</blockquote>
+  </div>
+
+  <div class="signoff">
+    <div><span class="sig">K. Zaręba</span><div class="line">Przygotował · Platform Engineer</div></div>
+    <div><div class="line" style="margin-top:74px">Obowiązuje · każde zadanie</div></div>
+  </div>
+
+</div>
+</body>
+</html>
