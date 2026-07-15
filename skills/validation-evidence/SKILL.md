@@ -28,12 +28,15 @@ No paperwork theater: everything here is generated from real artifacts.
 4. **Change control trail.** `git log --oneline` for the scope, PR links +
    approvers, deployment approval records (environment protection), and
    DECISIONS.md entries relevant to this unit.
-5. **Gaps.** Explicit list: untested requirements, manual steps performed,
+5. **System description.** Confirm `docs/SYSTEM.md` still matches reality
+   (purpose, components + data flows, environments, interfaces); update it
+   within this release's scope. Auditors read it before any evidence pack.
+6. **Gaps.** Explicit list: untested requirements, manual steps performed,
    known deviations — each with owner and follow-up.
 
 ## Output
 
 `evidence/<tag>/SUMMARY.md` containing: scope, RTM table, links to captured
-outputs, change trail, gaps. One screen; a QA reviewer should get to "approve
-or ask" in five minutes. Commit the pack — evidence that can drift isn't
+outputs, change trail, pointer to `docs/SYSTEM.md`, gaps. One screen; a QA
+reviewer should get to "approve or ask" in five minutes. Commit the pack — evidence that can drift isn't
 evidence (Enduring).

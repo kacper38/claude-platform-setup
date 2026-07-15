@@ -19,6 +19,10 @@ and a scaffolded workspace. Nothing gets built before this completes.
    - `README.md` — goal, scope, explicit "not doing X because Y" section
    - `DECISIONS.md` — decision log with format: `- <decision> — <why>; revisit if: <trigger>`
    - `CLAUDE.md` — copy this setup's working agreement, append the task's assumptions
+   - `docs/SYSTEM.md` — one-page system description: purpose, components +
+     data flows, environments, interfaces, data classification. Auditors read
+     this first; a GAMP 5 CSV package expects it. Skeleton now, kept current
+     at every release (validation-evidence checks it)
 4. **Plan.** Delegate to the `platform-planner` agent (or produce the same
    structure inline): assumptions, questions, step plan with per-step
    verification commands, trade-offs, cut line.
