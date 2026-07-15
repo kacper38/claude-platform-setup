@@ -14,13 +14,18 @@ before moving on. Skip or reorder stages only when the plan says so — and say 
    (db, vector store). Verify: app responds locally.
 2. **Containerize** — multi-stage Dockerfile: deps layer → runtime layer,
    non-root user (`useradd -m -u 10001 appuser`), slim base, HEALTHCHECK,
-   exec-form CMD, `.dockerignore`. Verify: `docker build` + run + hit `/health`.
+   exec-form CMD, `.dockerignore`. Next.js: `output: "standalone"`, copy
+   `.next/standalone` onto a `node:<lts>-slim` base — not the full
+   node_modules. Verify: `docker build` + run + hit `/health`.
 3. **CI** — GitHub Actions: `ruff check` → `pytest -q` → `docker build` →
    `trivy image --exit-code 1 --severity HIGH,CRITICAL` → push to registry.
    Dependency audit next to lint (`pip-audit` / `npm audit --audit-level=high`
    where a lockfile exists). `permissions: {id-token: write, contents: read}`;
-   OIDC role, no stored cloud keys; tag = `${{ github.sha }}`. Verify: workflow
-   syntax (act or push), steps ordered fail-fast, scan gating before push.
+   OIDC role, no stored cloud keys; tag = `${{ github.sha }}`. Node/Next.js
+   chain: `npm ci` → `eslint` → `tsc --noEmit` → test → `next build` → docker
+   build (actions/setup-node with npm cache, version from `.nvmrc`). Verify:
+   workflow syntax (act or push), steps ordered fail-fast, scan gating before
+   push.
 4. **IaC** — Terraform module skeleton: `modules/network`, `modules/service`
    (ECS Fargate + ALB on AWS, or Container Apps on Azure), `variables.tf`,
    `outputs.tf` (service URL), remote backend + locking (S3+DynamoDB /

@@ -32,6 +32,12 @@ the compliance lens belongs to gxp-compliance-reviewer — don't duplicate it.
 - verify: `terraform fmt -check`, `terraform validate`, review `terraform plan`
   output; `trivy config` / `checkov` when installed (fallback: wildcard-IAM grep)
 
+**Node/Next.js build (when the workflow builds one)**
+- lockfile committed; `npm ci` not `npm install`; node version pinned and
+  consistent across `.nvmrc` / `engines` / Dockerfile / setup-node
+- `tsc --noEmit` + `next build` gate before the image build; standalone
+  output in the Dockerfile; nothing secret in `NEXT_PUBLIC_*`
+
 **docker-compose (local dev)**
 - pinned service versions; volumes for state; healthchecks on deps; one-command up
 

@@ -60,6 +60,8 @@ Bias toward caution over speed; for trivial tasks use judgment.
 ## Default stack choices (unless the task or client dictates otherwise)
 
 - Python 3.12 + FastAPI, `ruff` + `pytest`
+- Next.js + TypeScript (strict) for frontends; gate: `eslint` + `tsc --noEmit`
+  + `next build`; zod at trust boundaries; `npm ci`, never `npm install`, in CI
 - Docker multi-stage; docker-compose for local deps (db, vector store)
 - GitHub Actions: lint → test → build → push (OIDC)
 - Terraform, modular (`variables.tf` / `outputs.tf`, remote state + locking);

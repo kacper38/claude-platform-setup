@@ -34,6 +34,7 @@ Execution bench:
 | Agent | Role |
 |---|---|
 | `python-engineer` | Production Python: FastAPI, CLIs, automation; uv + ruff + mypy + pytest |
+| `node-engineer` | Production TypeScript: Next.js frontends, zod at boundaries; npm ci + tsc + vitest |
 | `shell-engineer` | Bash that survives production: `set -euo pipefail`, quoting, shellcheck, traps — and knows when to switch to Python |
 | `k8s-engineer` | Manifests (probes, limits, securityContext), Kustomize/Helm, pod-debugging runbook, EKS/AKS, GitOps |
 | `git-surgeon` | Conflicts, reflog recovery, bisect, history surgery behind a backup branch; signed commits as audit trail |
