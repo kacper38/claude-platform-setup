@@ -466,6 +466,7 @@ footer.doc-footer {
 <li>Testing is weaker than real languages: <code>terraform test</code> and Terratest exist but mostly test by deploying real resources — slow and costly</li>
 <li>Provider coverage lags new cloud features by days to months</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> default for a multi-cloud consultancy. One tool, one review process, one evidence pipeline across AWS and Azure clients — unless a specific client mandates otherwise.</p>
 </div>
 
@@ -485,6 +486,7 @@ footer.doc-footer {
 <li>Full language power invites over-engineering: infra codebases can grow the same architecture-astronautics as application code</li>
 <li>Default SaaS state backend can conflict with client data-boundary requirements; self-hosting it reintroduces Terraform's state operations</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> an engineering-heavy team building a complex, software-like platform (dynamic per-tenant infrastructure, heavy logic) and the review audience is engineers, not QA.</p>
 </div>
 
@@ -503,6 +505,7 @@ footer.doc-footer {
 <li>Stuck-stack failure modes (<code>UPDATE_ROLLBACK_FAILED</code>, resources you must skip or manually fix) are painful and opaque</li>
 <li>Change sets (its plan equivalent) are less detailed and less ergonomic than <code>terraform plan</code>; importing existing resources is clunkier</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> an AWS-only client mandates native tooling, or you need StackSets/Service Catalog governance patterns that assume CFN underneath.</p>
 </div>
 
@@ -522,6 +525,7 @@ footer.doc-footer {
 <li>ARM incremental deployments don't delete removed resources by default — deleting from code and expecting the resource to vanish is a classic drift-generating gotcha (deployment stacks address this, but you must adopt them deliberately)</li>
 <li>Smaller module ecosystem (Azure Verified Modules is the emerging answer, and notably ships both Bicep and Terraform variants)</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> the client is Azure-only and mandates or prefers Microsoft-native tooling — a frequent pharma scenario; see below.</p>
 </div>
 
@@ -576,6 +580,7 @@ footer.doc-footer {
 <li><code>pull_request_target</code> and workflow-injection footguns: untrusted PR code plus a privileged trigger has caused real credential exfiltration incidents across the ecosystem. You must understand which triggers run with secrets.</li>
 <li>Debugging is remote-only by default; reproducing a failing job locally requires third-party tooling and is never exact.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> the code is on GitHub (usually decisive), you want OIDC-first cloud auth with minimal setup, and you can enforce SHA-pinning discipline on marketplace actions.</p>
 </div>
 
@@ -595,6 +600,7 @@ footer.doc-footer {
 <li>OIDC (ID tokens) works to both AWS and Azure but the claim vocabulary and per-job token configuration is more manual than GitHub's.</li>
 <li>If the client's code is on GitHub or Azure Repos anyway, adopting GitLab just for CI splits identity, permissions, and audit trail across two systems.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> the client self-hosts GitLab (common in pharma for data-residency and toolchain-qualification reasons), or you want one vendor for the full SDLC evidence chain.</p>
 </div>
 
@@ -614,6 +620,7 @@ footer.doc-footer {
 <li>YAML template expression syntax (<code>${{ }}</code> compile-time vs <code>$( )</code> runtime vs <code>$[ ]</code> runtime-lazy) is a chronic source of confusion and silent-empty-variable bugs.</li>
 <li>OIDC federation to AWS is possible but second-class compared to its Azure path; cross-cloud consultancies feel this asymmetry.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> the client is an Azure/Entra enterprise with change-management (ITSM) integration requirements, or already lives in Azure DevOps — its approval/check machinery maps almost one-to-one onto GxP change control.</p>
 </div>
 
@@ -693,6 +700,7 @@ footer.doc-footer {
 <li>Single point of failure: daemon restart historically meant container restarts (mitigated by live-restore, but the architecture invites this class of problem).</li>
 <li>Docker Desktop licensing requires paid subscriptions in larger enterprises — pharma clients with strict software-asset-management often flag this.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> local development, CI where the runner already provides it, and anywhere team familiarity matters more than the root-daemon concern. It is still the pragmatic default.</p>
 </div>
 
@@ -711,6 +719,7 @@ footer.doc-footer {
 <li>Compose support (<code>podman-compose</code> or the compose socket shim) lags real Docker Compose; edge cases bite.</li>
 <li>Some CI ecosystems and tools (testcontainers, certain build actions) assume a Docker socket and need configuration to work against Podman's socket-compatibility mode.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> building on client-managed RHEL hosts, when the client's security baseline forbids root daemons, or when Docker Desktop licensing is a blocker. In interviews, the crisp answer is: "OCI images are the standard; the engine is an implementation detail — I pick Podman where rootless matters, Docker where ecosystem friction matters."</p>
 </div>
 
@@ -748,6 +757,7 @@ footer.doc-footer {
 <li>No daemonsets, limited sidecar ergonomics, coarser scaling primitives than K8s (no equivalent of KEDA's rich scaler catalog without gluing CloudWatch).</li>
 <li>Fargate constraints: no GPUs (a real limit for self-hosted embedding/inference workloads — you'd fall back to ECS on EC2 or EKS), slower cold starts than warm nodes, per-vCPU pricing that exceeds equivalent EC2 at sustained high utilization.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> AWS-based RAG/API workloads with a small platform team — FastAPI services behind an ALB, workers, scheduled tasks. This is the CLAUDE.md-default for a reason: maximum evidence-per-engineer-hour.</p>
 </div>
 
@@ -765,6 +775,7 @@ footer.doc-footer {
 <li>Less mature than ECS; some knobs (advanced networking, certain probe/sidecar behaviors) trail what the underlying K8s could do.</li>
 <li>Same portability caveat as ECS: the manifests are Azure-specific even though the runtime is secretly Kubernetes.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> Azure-based clients (most pharma majors are Microsoft shops) and the workload fits "HTTP services + queue workers." The Azure counterpart to the ECS Fargate default.</p>
 </div>
 
@@ -783,6 +794,7 @@ footer.doc-footer {
 <li>Enormous misconfiguration surface (RBAC, network policies, admission control) — a hardened cluster is a project, not a default.</li>
 <li>For a small consultancy team, an understaffed cluster is a liability in an audit: "who reviews and approves cluster upgrades?" needs an answer.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> GPU workloads, operator-based stateful services, multi-team platforms, portability requirements, or the client mandates it because it's what their platform team runs and validates. Not because "we might need it later."</p>
 </div>
 
@@ -864,6 +876,7 @@ footer.doc-footer {
 <li>Metrics only. Logs need Loki, traces need Tempo/Jaeger — three systems to operate and correlate instead of one.</li>
 <li>Cardinality explosions (e.g. a label containing user IDs or request paths) can OOM the server; nothing stops you until it falls over.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> telemetry must stay inside the client's boundary, you're already on Kubernetes/ECS with an ops team that can own it, or budget rules out SaaS. For a small consultancy-delivered product, prefer the managed flavours (Amazon Managed Prometheus + Grafana, Azure Monitor managed Prometheus) to keep PromQL without the pager duty for the monitoring stack itself.</p>
 </div>
 
@@ -882,6 +895,7 @@ footer.doc-footer {
 <li>Telemetry leaves your boundary. Logs routinely contain PII/PHI by accident; shipping them to a US-hosted SaaS can violate a client's data-processing agreement. Datadog offers regional sites, but you must verify scrubbing and region <em>before</em> the first log line ships.</li>
 <li>Vendor lock-in via proprietary agent, query language, and dashboard format. OpenTelemetry as the instrumentation layer keeps the exit door open.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> the client already has it (most common case), or you need full-stack correlation fast and the data-handling agreement permits SaaS telemetry with a suitable region and PII scrubbing in place.</p>
 </div>
 
@@ -900,6 +914,7 @@ footer.doc-footer {
 <li>Cost gotchas: custom metrics, high-frequency <code>PutMetricData</code>, alarm counts, and above all <strong>log ingestion</strong> — a chatty debug logger on a busy service can make CloudWatch Logs one of your largest line items.</li>
 <li>AWS-only. Useless for the Azure half of a dual-cloud consultancy, so it can never be the <em>single</em> pane of glass.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> AWS-only deployment, especially ECS Fargate/Lambda. A very defensible pattern: CloudWatch as the collection and alarm layer, Grafana (managed) on top as the query/dashboard layer, giving decent UX without moving the data.</p>
 </div>
 
@@ -918,6 +933,7 @@ footer.doc-footer {
 <li>Fragmented conceptual model: platform metrics, workspace logs, App Insights resources, and alert rules are separate objects with separate RBAC and pricing — the learning curve is real.</li>
 <li>Azure-only, same single-pane problem as CloudWatch in a dual-cloud shop.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> deploying on Azure (Container Apps + Azure OpenAI), which for this role's client base is often the compliant default — telemetry stays in the client's tenant next to their data.</p>
 </div>
 
@@ -1018,6 +1034,7 @@ footer.doc-footer {
 <li>Quota is allocated per subscription/region/model (tokens-per-minute), and shared standard capacity can throttle under load — capacity planning is a real workstream, not an afterthought.</li>
 <li>Default abuse-monitoring stores prompts for human review unless the client obtains a "modified abuse monitoring" exemption — a detail that surprises legal teams late if you do not surface it early.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> the client is Azure-centric, wants OpenAI-family models, and needs the tightest identity story (managed identities, no keys) inside an existing validated Azure landing zone.</p>
 </div>
 
@@ -1040,6 +1057,7 @@ footer.doc-footer {
 <li>Content filtering is opt-in (Guardrails), not on by default — the responsibility sits with you, and a QA team will ask where it is.</li>
 <li>Default on-demand quotas can be modest; production throughput may require provisioned throughput commitments or quota-increase processes with lead time.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> the client is AWS-centric, wants Claude or multi-model flexibility, and you want model approval enforced through IAM rather than process documents.</p>
 </div>
 
@@ -1060,6 +1078,7 @@ footer.doc-footer {
 <li>Long-lived API keys as the primary credential — exactly the pattern (secrets that can leak and be replayed from anywhere) that cloud IAM was built to eliminate.</li>
 <li>Model deprecation and change management follow the vendor's public timeline, not your validation calendar.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> prototyping, evaluation harnesses, or internal products with no client/GxP data — and be explicit in DECISIONS.md that the production path is the broker.</p>
 </div>
 
@@ -1183,6 +1202,7 @@ footer.doc-footer {
 <li>Vector workload competes with your transactional workload for the same RAM and I/O</li>
 <li>Built-in lexical search (Postgres FTS) is workable but weaker than a real BM25 engine; hybrid search is DIY</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> you already run Postgres (you do), corpus is up to low millions of chunks, and tenant isolation via RLS matters. This is the correct default for a single-client GxP RAG product; departing from it is the decision that needs justifying in <code>DECISIONS.md</code>.</p>
 </div>
 
@@ -1199,6 +1219,7 @@ footer.doc-footer {
 <li>Tier/capacity model constrains index size and features; re-provisioning to a new tier can mean rebuilding indexes</li>
 <li>Azure-only — a problem if your consultancy delivers on AWS too and wants one architecture</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> the client is committed to Azure, the security review already covers it, and built-in hybrid+rerank saves you real engineering — often the pragmatic pick for Azure OpenAI-centric deliveries.</p>
 </div>
 
@@ -1214,6 +1235,7 @@ footer.doc-footer {
 <li>Vector features are younger than the lexical core; filter-then-ANN behavior and memory usage need testing, not assuming</li>
 <li>Like AI Search: no transactions, no joins, eventual-consistency drift from your system of record</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> AWS-centric delivery at a scale/filtering complexity Postgres struggles with, or the client already operates OpenSearch and strong BM25 is a hard requirement.</p>
 </div>
 
@@ -1228,6 +1250,7 @@ footer.doc-footer {
 <li>Proprietary: no self-host escape hatch; migration means re-embedding/re-indexing elsewhere</li>
 <li>Vector-only mindset — relational metadata, joins, and transactional ingestion live elsewhere</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> non-regulated data, extreme scale, minimal ops appetite, and the data-processing agreement genuinely covers it. Rarely the right call for GxP client documents.</p>
 </div>
 
@@ -1243,6 +1266,7 @@ footer.doc-footer {
 <li>No SQL/joins/RLS; the two-system consistency problem again</li>
 <li>Smaller ecosystem and enterprise track record than Postgres/OpenSearch — a "please justify this vendor" conversation with client QA</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> you've measured that filtered vector search at your scale genuinely breaks pgvector, and you need self-hosting inside the data boundary — the natural "graduation" target from pgvector.</p>
 </div>
 
@@ -1581,6 +1605,7 @@ footer.doc-footer {
 <li>OData services often paginate poorly on large extracts; bulk history usually means a scheduled batch extract, not paging through the API.</li>
 <li>RFC requires SAP's proprietary client libraries and careful connection pooling; a leaked RFC service user is a serious incident because BAPIs can also <em>write</em>.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> OData for on-demand lookups and incremental pulls; IDocs for high-volume, event-shaped flows the client already emits; BAPI/RFC only when no OData service exists and the client's SAP team agrees to expose one.</p>
 </div>
 
@@ -1597,6 +1622,7 @@ footer.doc-footer {
 <li>Result approval workflows mean data is mutable-until-approved; naive incremental extracts by timestamp will capture values that later change.</li>
 <li>Older systems may only offer file export or ODBC over an aging DB — budget for ugly plumbing.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> REST API if the version supports it and the client licenses it; otherwise vendor-documented read-only views with an approval-status filter baked into the contract.</p>
 </div>
 
@@ -1613,6 +1639,7 @@ footer.doc-footer {
 <li>EBR exports are often PDF-shaped even when the underlying data is structured; negotiate for the structured export early or you'll be doing document parsing on data that existed as fields.</li>
 <li>Batch records are only "final" after review-by-exception and release; the same approved-state problem as LIMS applies.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> you need execution-level truth (what actually happened during the batch) rather than planning-level truth (SAP) or lab-level truth (LIMS). Pull released EBRs via the vendor's export interface into your boundary; don't query MES live for analytical workloads.</p>
 </div>
 
@@ -1629,6 +1656,7 @@ footer.doc-footer {
 <li>Bulk historical extraction over the Web API is slow; large backfills usually need the vendor's export tooling and a file-based handover.</li>
 <li>Timestamps may be in plant-local time with DST ambiguities; normalize to UTC at ingestion and record the rule.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> any use case touching process/equipment data. Consume via PI Web API or a vendor cloud connector; treat a request for direct OPC-UA access from your platform as a design smell.</p>
 </div>
 
@@ -1645,6 +1673,7 @@ footer.doc-footer {
 <li>Renditions (the viewable PDF) can differ from the source file; decide which one is "the document" for your index and write it down.</li>
 <li>Permissions in the DMS are fine-grained; your RAG layer must not become a permission-bypass channel — mirror or check entitlements at query time.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> effectively always, for document-grounded RAG. Prefer the vendor API with lifecycle-state filters over any file-share export the client offers "because it's easier."</p>
 </div>
 
@@ -1855,6 +1884,7 @@ footer.doc-footer {
 <li>Custom rotation means writing and maintaining a Lambda; the built-in rotators only cover AWS-managed databases.</li>
 <li>AWS-only. In a dual-cloud consultancy you will run two secret stores or a third-party one.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> the workload is AWS-native and you want rotation plus CloudTrail attribution with zero extra infrastructure. The default on AWS.</p>
 </div>
 
@@ -1872,6 +1902,7 @@ footer.doc-footer {
 <li>Two access models (access policies vs RBAC) coexist; mixed-mode vaults are a classic audit finding because nobody can state the effective permissions.</li>
 <li>Soft-delete and purge protection interact badly with ephemeral IaC environments: a destroyed vault's name is locked until purge, and <code>terraform apply</code> recreating it fails confusingly.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> Azure-native workloads, especially anything using managed identities or needing certificate lifecycle management. The default on Azure.</p>
 </div>
 
@@ -1889,6 +1920,7 @@ footer.doc-footer {
 <li>The 2023 license change (BUSL) complicates use in some consultancy/embedding scenarios; OpenBao exists as a fork but adds another decision.</li>
 <li>Dynamic database credentials mean every app instance has its own DB user — connection-pool and permissions tooling must cope with that.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> genuinely multi-cloud with a team able to operate tier-0 infrastructure, or when dynamic secrets / transit encryption is a hard requirement. Otherwise prefer the native store per cloud.</p>
 </div>
 
@@ -1994,6 +2026,7 @@ footer.doc-footer {
 <li>Tags are only useful if activated and consistent — <code>Client=acme</code> vs <code>client=Acme</code> creates two categories. In AWS, cost allocation tags only apply from activation forward, not retroactively.</li>
 <li>Retrofitting tags onto a live estate is painful; some resources require replacement to change tags in Terraform.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> always — but decide the tag taxonomy (keys, allowed values, casing) on day one and enforce it via provider <code>default_tags</code> plus a CI check, before the first resource exists. The strongest isolation is structural: one AWS account or Azure subscription per client, so the billing boundary is the security boundary and no tag can be forgotten.</p>
 </div>
 
@@ -2011,6 +2044,7 @@ footer.doc-footer {
 <li>Alerts that go to an ignored mailbox are theater. Route them to the same on-call channel as operational alerts — a cost anomaly usually <em>is</em> an operational anomaly (retry storm, scraping, runaway job).</li>
 <li>Fast-burn services (LLM API calls, GPU) need application-level limits, not billing-level ones — the billing signal is too slow.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> always, per client and per environment — but treat them as the last line, with application-level rate limits and token budgets as the first.</p>
 </div>
 
@@ -2027,6 +2061,7 @@ footer.doc-footer {
 <li>Python/FastAPI wrinkle: a single-worker async service can't use more than one vCPU anyway; giving it 4 vCPU is pure waste unless you run multiple uvicorn workers.</li>
 <li>Database downsizing requires a maintenance window and confidence in your load profile; teams defer it indefinitely. The gotcha is IOPS and connection limits scale with instance class — downsizing can break things in ways CPU graphs don't predict.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> quarterly review cadence per client, driven by utilization dashboards — not as a one-off panic exercise after a bill spike.</p>
 </div>
 
@@ -2043,6 +2078,7 @@ footer.doc-footer {
 <li>Stateful components (databases, vector stores) either don't stop cleanly or lose data on teardown — you need seed/restore automation, which is upfront work.</li>
 <li>Some costs don't scale to zero: NAT gateways, ALBs, EBS volumes, and static IPs bill while idle. A "scaled to zero" environment can still cost real money in networking scaffolding.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> every non-prod environment, from day one. Design environments to be schedulable before they exist; retrofitting is 10x the effort.</p>
 </div>
 
@@ -2059,6 +2095,7 @@ footer.doc-footer {
 <li>Commitments live in a payer account; allocating their benefit fairly across client cost centers adds accounting complexity (shared vs. dedicated commitment discount attribution).</li>
 <li>Commitments create an incentive against right-sizing — "we've committed the spend anyway" is how oversized fleets fossilize.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> you have 6+ months of usage history and can identify a floor that survives your worst plausible client-churn scenario. Commit to ~70–80% of that floor, stay on-demand for the rest. Never in month one of an engagement.</p>
 </div>
 
@@ -2074,6 +2111,7 @@ footer.doc-footer {
 <li>Ingestion, not storage, is usually the dominant cost — retention policies don't fix a service that logs full request/response bodies at INFO. Fix verbosity at the source.</li>
 <li>Aggressive deletion collides with audit obligations (see the GxP callout) — retention is a compliance decision wearing a cost hat.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> always set explicit retention per log group; align the number with the client's record-retention SOP, then archive rather than delete.</p>
 </div>
 
@@ -2091,6 +2129,7 @@ footer.doc-footer {
 <li>Estimates assume usage patterns you must configure; a serverless resource can show as near-zero and then bill heavily under load.</li>
 <li>Numbers become wallpaper if every PR shows them without a policy — pair with a threshold ("delta &gt; $X/month requires explicit approval").</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> any team with more than one person merging Terraform. It's an afternoon to set up in GitHub Actions.</p>
 </div>
 
@@ -2122,6 +2161,7 @@ footer.doc-footer {
 <li>Caps set blindly degrade quality invisibly — truncated retrieval context produces plausible answers missing key evidence, which in a pharma RAG product is worse than an error.</li>
 <li>Needs per-client configurability (contractual tiers) without becoming a config swamp.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> before the first production request. This is a launch blocker, not an optimization.</p>
 </div>
 
@@ -2138,6 +2178,7 @@ footer.doc-footer {
 <li>More models = more prompts to maintain, more model-deprecation surfaces, more validation scope in a regulated product.</li>
 <li>Dynamic routing ("classify difficulty, then route") adds a call and a failure mode; static per-task assignment is simpler and usually captures most of the win.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> as soon as you have evals per pipeline stage. Start every new sub-task on a small model and promote only when evals demand it — the reverse default (frontier everywhere, downgrade later) never gets revisited.</p>
 </div>
 
@@ -2154,6 +2195,7 @@ footer.doc-footer {
 <li>Stale caches after document updates: an answer cached before a label change keeps serving the old label. Cache invalidation must be wired to the ingestion pipeline.</li>
 <li>Prompt caching couples cost to prompt structure — an innocent prompt refactor that moves dynamic content earlier can silently double input cost. Cost-per-query metrics (below) are how you catch it.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> prompt and embedding caching always; response caching only exact-match unless you can prove semantic matching is safe for the domain — which in pharma you usually can't.</p>
 </div>
 
@@ -2169,6 +2211,7 @@ footer.doc-footer {
 <li>Results can take hours; pipelines must be genuinely asynchronous with retry/poll logic — a batch job you sit and wait for is a smell.</li>
 <li>Partial failures within a batch need handling; "resubmit the whole batch" doubles the cost you just halved.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> any LLM workload where nobody is waiting on the response. Audit your call sites: if more than ~20% of token spend is offline and interactive-priced, this is your cheapest win.</p>
 </div>
 
@@ -2184,6 +2227,7 @@ footer.doc-footer {
 <li>Requires plumbing metadata through every call site; retrofitting is tedious. A thin internal wrapper around the LLM client, mandatory from day one, is the cheap answer.</li>
 <li>Computed cost drifts from invoiced cost (price changes, caching discounts, batch discounts); treat it as a relative signal and reconcile against the invoice monthly.</li>
 </ul></div>
+</div>
 <p class="when"><strong>Choose when:</strong> from the first production deploy — it is one metric per service, which your observability baseline requires anyway.</p>
 </div>
 

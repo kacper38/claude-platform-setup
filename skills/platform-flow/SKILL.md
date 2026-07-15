@@ -30,12 +30,21 @@ before moving on. Skip or reorder stages only when the plan says so — and say 
    (ECS Fargate + ALB on AWS, or Container Apps on Azure), `variables.tf`,
    `outputs.tf` (service URL), remote backend + locking (S3+DynamoDB /
    azurerm) — declared even if mocked. Secrets via data source into Secrets
-   Manager / Key Vault, never in state. Verify: `terraform fmt -check`,
-   `terraform validate`, review `plan` output with the user.
+   Manager / Key Vault, never in state. `modules/network` is the boundary,
+   not decoration: private subnets for compute, default-deny SG/NSG, PaaS via
+   private endpoints, controlled egress. App identity = task role / managed
+   identity, never static keys. Event-driven glue (Lambda / Azure Functions)
+   under the same rules: IaC-defined, SHA-pinned artifact, least-privilege
+   role, timeout + DLQ. In CI: plan on PR posted as artifact, apply on merge
+   behind environment approval — plan + approval are validation evidence.
+   Verify: `terraform fmt -check`, `terraform validate`, review `plan` output
+   with the user.
 5. **CD** — deploy job in the pipeline gated on CI, environments (dev → prod)
    with controlled promotion. Verify: pipeline graph makes sense end-to-end.
 6. **Observability** — `/health` endpoint, structured JSON logs, one metric
-   and one alert sketched (CloudWatch / Azure Monitor). Verify: endpoint
+   and one alert sketched (CloudWatch / Azure Monitor); scheduled
+   `terraform plan -detailed-exitcode` as a drift alert — undetected drift
+   breaks Original: IaC is the documented environment. Verify: endpoint
    answers, log line shows correlation id.
 7. **Security & compliance sweep** — run the `gxp-check` skill; fix blockers.
 

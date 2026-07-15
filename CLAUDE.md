@@ -80,5 +80,8 @@ Bias toward caution over speed; for trivial tasks use judgment.
 - client-system integrations: API pull with vault-stored credentials by
   default; SFTP + checksum manifest for file drops; network peering/VPN only
   on client mandate — each connection recorded in DECISIONS.md
+- event-driven / glue workloads: Lambda (AWS) or Azure Functions — same rules
+  as services: IaC-defined, artifact pinned to git SHA, least-privilege role /
+  managed identity, structured logs, timeout + DLQ declared
 - Observability minimum: `/health` endpoint, structured logs with correlation
   ids, one metric + alert per service

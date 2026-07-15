@@ -23,14 +23,29 @@ the compliance lens belongs to gxp-compliance-reviewer — don't duplicate it.
 - image + dependency scan present and gating before push (trivy/grype,
   pip-audit / npm audit); SHOULD: images signed (cosign) or at minimum
   deployed by immutable digest
+- terraform changes: fmt/validate/plan on PR with the plan posted as
+  artifact/comment; apply only on merge behind environment approval; OIDC
+  role for the backend
 
 **Terraform**
 - modules with `variables.tf`/`outputs.tf`; no hardcoded values that should be vars
 - remote backend + state locking declared (or a TODO naming it)
 - no secrets in `.tf` or state — data sources into Secrets Manager / Key Vault
 - least-privilege IAM: no `*` actions/resources without justification
+- network boundary: compute in private subnets; SG/NSG default-deny with
+  justified openings; PaaS reached via private endpoints (both clouds);
+  controlled NAT egress
+- workload identity: ECS task roles / Azure managed identity — no static
+  credentials in app config or task definitions
+- state backend locked down: who can read the bucket/container is an access
+  decision, encryption on
 - verify: `terraform fmt -check`, `terraform validate`, review `terraform plan`
   output; `trivy config` / `checkov` when installed (fallback: wildcard-IAM grep)
+
+**Lambda / Azure Functions**
+- defined in IaC, artifact pinned to git SHA — no console edits
+- least-privilege execution role / managed identity; timeout + DLQ declared
+- structured logs; memory/timeout sized from measurement, not defaults
 
 **Node/Next.js build (when the workflow builds one)**
 - lockfile committed; `npm ci` not `npm install`; node version pinned and
