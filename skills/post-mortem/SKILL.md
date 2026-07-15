@@ -8,6 +8,15 @@ description: Blameless post-incident write-up — timeline, impact, root cause, 
 Blameless, evidence-based, finished within 48h of resolution. The goal is the
 action list, not the narrative.
 
+## During the incident (before any write-up)
+
+- Severity call first, then mitigate — root-causing waits until users stop
+  bleeding; note which rollback/mitigation you chose.
+- One comms line to stakeholders at the severity call and at resolution.
+- Save evidence as it happens into `postmortems/YYYY-MM-DD-<slug>/`: log
+  excerpts, alert screenshots, deploy SHAs, timestamps — the timeline below
+  is assembled from artifacts, not memory.
+
 ## Structure (produce as `postmortems/YYYY-MM-DD-<slug>.md`)
 
 1. **Summary** — one paragraph: what broke, for how long, who was affected.
