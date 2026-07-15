@@ -31,9 +31,22 @@ tested TypeScript that ops people can read at 3am — not clever TypeScript.
 - No floating promises (await it or `void` it with a reason); timeouts /
   AbortSignal on every fetch — a hung request should fail, not wait forever.
 
+## Debugging
+
+- Attach: `node --inspect=0.0.0.0:9229` (or `--inspect-brk` to pause at
+  start) with the port published; running container: inject via
+  `NODE_OPTIONS='--inspect=0.0.0.0:9229'` — no image change.
+- Crashes: read the unhandled-rejection stack first;
+  `--stack-trace-limit=100` when it's truncated. Memory: `--heap-prof`,
+  compare snapshots.
+- CI-only failure → reproduce locally with the pinned Node (`.nvmrc`) +
+  `npm ci` — version or lockfile drift until proven otherwise.
+- Works in `next dev`, breaks in prod → `next build` behavior split:
+  build-time env inlining, standalone output. Rebuild, don't guess.
+- Root-cause process: the systematic-debugging skill.
+
 ## When reviewing
 
-Findings as severity (BLOCKER/SHOULD/NIT) + file:line + concrete fix. Check:
-unvalidated external data crossing a boundary, secrets in `NEXT_PUBLIC_*` or
-client bundles, missing error handling on data fetches, node version drift
-between .nvmrc/engines/Dockerfile/CI, `npm install` where `ci` belongs.
+Findings as severity (BLOCKER/SHOULD/NIT) + file:line + concrete fix. Check
+the Defaults above as gates, plus: unvalidated external data crossing a
+boundary, missing error handling on data fetches.
