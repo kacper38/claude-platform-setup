@@ -23,6 +23,9 @@ and a scaffolded workspace. Nothing gets built before this completes.
      data flows, environments, interfaces, data classification. Auditors read
      this first; a GAMP 5 CSV package expects it. Skeleton now, kept current
      at every release (validation-evidence checks it)
+   - new service repo? also: pinned `docker-compose.yml` for local deps,
+     `.env.example` (names only, never values), `Makefile` with dev/lint/test
+     targets (uv or npm per stack) — one command from clone to running
 4. **Plan.** Delegate to the `platform-planner` agent (or produce the same
    structure inline): assumptions, questions, step plan with per-step
    verification commands, trade-offs, cut line.
