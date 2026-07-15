@@ -26,6 +26,10 @@ the compliance lens belongs to gxp-compliance-reviewer — don't duplicate it.
 - terraform changes: fmt/validate/plan on PR with the plan posted as
   artifact/comment; apply only on merge behind environment approval; OIDC
   role for the backend
+- client on GitLab CI / Azure DevOps: same shape (lint → test → build → scan
+  → push → gated deploy), different glue — GitLab `id_tokens` / ADO workload
+  identity federation replace the OIDC block; protected environments (GitLab)
+  / environment approvals (ADO) replace protection rules. Same checklist.
 
 **Terraform**
 - modules with `variables.tf`/`outputs.tf`; no hardcoded values that should be vars

@@ -26,7 +26,8 @@ No paperwork theater: everything here is generated from real artifacts.
    pip-audit / npm audit), SBOM where configured (`syft <image> -o spdx-json`),
    eval report if AI-touching.
 4. **Change control trail.** `git log --oneline` for the scope, PR links +
-   approvers, DECISIONS.md entries relevant to this unit.
+   approvers, deployment approval records (environment protection), and
+   DECISIONS.md entries relevant to this unit.
 5. **Gaps.** Explicit list: untested requirements, manual steps performed,
    known deviations — each with owner and follow-up.
 

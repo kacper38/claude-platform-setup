@@ -39,8 +39,11 @@ before moving on. Skip or reorder stages only when the plan says so — and say 
    behind environment approval — plan + approval are validation evidence.
    Verify: `terraform fmt -check`, `terraform validate`, review `plan` output
    with the user.
-5. **CD** — deploy job in the pipeline gated on CI, environments (dev → prod)
-   with controlled promotion. Verify: pipeline graph makes sense end-to-end.
+5. **CD** — deploy job gated on CI and pinned to the CI-built SHA; GitHub
+   Environments with protection rules, required reviewers on prod. The
+   recorded approval + deployment log is validation evidence — the
+   validation-evidence pack captures it. Verify: pipeline graph makes sense
+   end-to-end; prod deploy blocked without approval.
 6. **Observability** — `/health` endpoint, structured JSON logs, one metric
    and one alert sketched (CloudWatch / Azure Monitor); scheduled
    `terraform plan -detailed-exitcode` as a drift alert — undetected drift
