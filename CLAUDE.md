@@ -64,6 +64,9 @@ Bias toward caution over speed; for trivial tasks use judgment.
 
 - `README.md` — goal, scope, what this does NOT do and why, how to run
 - `DECISIONS.md` — running decision log (ADR-light)
+- `docs/SYSTEM.md` — one-page system description (purpose, components + data
+  flows, environments, interfaces, data classification); kept current at
+  every release
 
 ## Default stack choices (unless the task or client dictates otherwise)
 

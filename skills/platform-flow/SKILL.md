@@ -30,7 +30,8 @@ before moving on. Skip or reorder stages only when the plan says so — and say 
    workflow syntax (act or push), steps ordered fail-fast, scan gating before
    push.
 4. **IaC** — Terraform module skeleton: `modules/network`, `modules/service`
-   (ECS Fargate + ALB on AWS, or Container Apps on Azure), `variables.tf`,
+   (compute per CLAUDE.md: client's existing platform first, else greenfield
+   default ECS Fargate + ALB on AWS, or Container Apps on Azure), `variables.tf`,
    `outputs.tf` (service URL), remote backend + locking (S3+DynamoDB /
    azurerm) — declared even if mocked. Secrets via data source into Secrets
    Manager / Key Vault, never in state. `modules/network` is the boundary,

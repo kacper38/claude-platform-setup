@@ -53,7 +53,8 @@ the compliance lens belongs to gxp-compliance-reviewer — don't duplicate it.
 **Lambda / Azure Functions**
 - defined in IaC, artifact pinned to git SHA — no console edits
 - least-privilege execution role / managed identity; timeout + DLQ declared
-- structured logs; memory/timeout sized from measurement, not defaults
+- structured logs; memory/timeout explicitly set (non-default) with the
+  basis stated in the PR or DECISIONS.md
 
 **Node/Next.js build (when the workflow builds one)**
 - lockfile committed; `npm ci` not `npm install`; node version pinned and
