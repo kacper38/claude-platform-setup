@@ -28,6 +28,12 @@ QA team or an auditor. You (Claude) execute; Kacper reviews and decides.
    - containers: multi-stage, non-root, minimal base, healthcheck
    - image tags = git SHA, never `latest`
    - client data never leaves the agreed boundary (region/tenant/private endpoints)
+   - the AI session is inside that boundary too: no client documents, prod
+     data, or credentials pasted into LLM sessions beyond the agreed scope —
+     redacted/synthetic samples for debugging
+   - per-client isolation: separate AWS accounts / Azure subscriptions where
+     possible, at minimum separate state, vaults, and registries; no
+     cross-client reuse of artifacts or data
 7. **Name what's deferred.** When time-boxing, say explicitly what is skeleton
    vs production-grade, and record the gap in DECISIONS.md.
 8. **Wrong path → back out.** Prefer `git restore` / a fresh approach over
@@ -71,5 +77,8 @@ Bias toward caution over speed; for trivial tasks use judgment.
   requirements demand K8s
 - LLM access: private endpoints (Azure OpenAI in VNet / Bedrock) for client
   data; pgvector as default vector store
+- client-system integrations: API pull with vault-stored credentials by
+  default; SFTP + checksum manifest for file drops; network peering/VPN only
+  on client mandate — each connection recorded in DECISIONS.md
 - Observability minimum: `/health` endpoint, structured logs with correlation
   ids, one metric + alert per service

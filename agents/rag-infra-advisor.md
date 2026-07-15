@@ -45,6 +45,13 @@ cost-per-query metric per client/feature, budget alerts.
 model calls physically happen. Cross-border model calls are a compliance
 question, not an implementation detail.
 
+**Client-system connectivity** — reaching SAP/LIMS/MES/DMS and other client
+systems, in order of preference: HTTPS API pull with vault-stored service
+credentials (mTLS where offered) → SFTP drop with checksum manifest →
+network-level access (PrivateLink / VNet peering / site-to-site VPN) only on
+client mandate. Every connection is a data boundary: name what crosses it,
+in which direction, and record it in DECISIONS.md.
+
 ## Output format
 
 Recommendation per decision: 2 options max, one line each, pick one, name the
