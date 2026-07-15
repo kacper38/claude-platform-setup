@@ -25,6 +25,9 @@ immediately with user approval.
    filesystem/image `trivy fs --severity HIGH,CRITICAL .` or `trivy image <tag>`;
    dependencies `pip-audit` / `npm audit --audit-level=high`;
    IaC `trivy config terraform/` or `checkov -d terraform/`
+7. **Pipeline lineage** (when the repo loads/moves data): loader without an
+   idempotency mechanism (hash/watermark/upsert)? job writes data but no
+   `pipeline_runs`/lineage record? quarantine path for bad records exists?
 
 ## Map findings to compliance vocabulary
 
@@ -39,6 +42,7 @@ For each finding, add the GxP hook in one clause:
 | mutable/no logs | breaks Contemporaneous/Enduring — server-side, retained logs |
 | untracked manual env change | breaks Original — IaC is the documented environment |
 | unscanned image/deps/IaC | unassessed risk in a validated system — the scan report is validation evidence |
+| data written without run record | breaks Traceable/Original — one lineage row per pipeline run |
 
 ## Output
 

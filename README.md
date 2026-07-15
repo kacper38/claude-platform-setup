@@ -49,6 +49,7 @@ Execution bench:
 | `/task-intake` | New task/ticket → assumptions, questions, scaffolding (README, DECISIONS.md, CLAUDE.md), approved plan |
 | `/platform-flow` | The chain: local dev → Docker → CI → Terraform → CD → observability → security |
 | `/rag-stack` | RAG component: pgvector, traceability-first schema, idempotent ingestion, private endpoints, eval + cost hooks |
+| `/data-pipeline` | Data feed/ETL: source contract + quarantine, idempotent load, lineage row per run, quality gates, scheduled job |
 | `/gxp-check` | Before significant commits — secrets/tags/IAM sweep mapped to GxP vocabulary |
 | `/validation-evidence` | Before release/handoff — evidence pack: requirement→implementation→test matrix, captured outputs, change trail |
 | `/post-mortem` | After an incident — blameless write-up with owners and a validation note |
