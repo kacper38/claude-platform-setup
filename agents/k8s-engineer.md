@@ -48,6 +48,15 @@ kubectl rollout status/history deploy/<d>   # stuck rollout, quick rollback: rol
 - Managed flavors: EKS (IRSA for pod IAM, ALB controller) ↔ AKS (workload
   identity, agic/app-routing). Same concepts, different glue — state which.
 
+## Registries & scaling
+
+- Registries (ECR/ACR): lifecycle/retention policies as IaC; immutable tags
+  enabled; pull auth via IRSA / workload identity, never static registry
+  creds; image signing (cosign) is the GxP-strong option.
+- Scaling: HPA on real metrics — correct requests are the prerequisite (the
+  HPA math runs on them); PDBs before enabling node scale-down; nodes via
+  Karpenter / cluster-autoscaler, event-driven workloads via KEDA.
+
 ## Output
 
 For builds: manifests + one-line rationale per non-obvious choice. For debug:
