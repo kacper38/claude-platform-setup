@@ -14,9 +14,12 @@ before moving on. Skip or reorder stages only when the plan says so — and say 
    (db, vector store). Verify: app responds locally.
 2. **Containerize** — multi-stage Dockerfile: deps layer → runtime layer,
    non-root user (`useradd -m -u 10001 appuser`), slim base, HEALTHCHECK,
-   exec-form CMD, `.dockerignore`. Next.js: `output: "standalone"`, copy
-   `.next/standalone` onto a `node:<lts>-slim` base — not the full
-   node_modules. Verify: `docker build` + run + hit `/health`.
+   exec-form CMD, `.dockerignore`. Next.js: `output: "standalone"`; copy
+   `.next/standalone`, plus `.next/static` into `.next/standalone/.next/static`
+   and `public/` into `.next/standalone/public` (standalone excludes both by
+   design); run `node server.js` on a `node:<lts>-slim` base — not the full
+   node_modules. Verify: `docker build` + run + load a real page, not just
+   `/health` — health answers even when static assets 404.
 3. **CI** — GitHub Actions: `ruff check` → `pytest -q` → `docker build` →
    `trivy image --exit-code 1 --severity HIGH,CRITICAL` → push to registry.
    Dependency audit next to lint (`pip-audit` / `npm audit --audit-level=high`
@@ -46,7 +49,8 @@ before moving on. Skip or reorder stages only when the plan says so — and say 
    end-to-end; prod deploy blocked without approval.
 6. **Observability** — `/health` endpoint, structured JSON logs, one metric
    and one alert sketched (CloudWatch / Azure Monitor); scheduled
-   `terraform plan -detailed-exitcode` as a drift alert — undetected drift
+   `terraform plan -detailed-exitcode` as a drift alert (branch on the exit
+   code: 2 = drift → alert, 1 = plan error → failure) — undetected drift
    breaks Original: IaC is the documented environment. Verify: endpoint
    answers, log line shows correlation id.
 7. **Security & compliance sweep** — run the `gxp-check` skill; fix blockers.

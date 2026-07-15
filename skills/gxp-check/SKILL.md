@@ -13,13 +13,19 @@ immediately with user approval.
 1. **Secrets in code/state:** `gitleaks detect --no-banner` when installed;
    fallback:
    `grep -rniE '(api[_-]?key|secret|password|token)\s*[:=]' --exclude-dir={.git,node_modules,.venv,.terraform} .`
-   plus check `*.tfstate`, `.env` committed? (`git ls-files | grep -E '\.env|tfstate'`)
+   plus check `*.tfstate`, `.env` committed?
+   (`git ls-files | grep -E '(^|/)\.env(\.|$)|\.tfstate' | grep -v '\.env\.example'`)
 2. **Container hygiene:** Dockerfile has `USER` (non-root)? `HEALTHCHECK`? base
-   image pinned? no `latest` anywhere (`grep -rn 'latest' Dockerfile* *.yml .github/ terraform/ 2>/dev/null`)
+   image pinned? no `latest` anywhere (`grep -rnE ':latest' . --include='Dockerfile*'
+   --include='*.yml' --include='*.yaml' --include='*.tf' --exclude-dir=.git 2>/dev/null`)
 3. **CI hygiene:** `permissions:` block present and minimal? OIDC not static
    keys (`grep -rn 'AWS_SECRET\|AZURE_CLIENT_SECRET' .github/`)? image tagged by SHA?
-4. **IaC hygiene:** `terraform fmt -check && terraform validate`; grep for
-   wildcard IAM (`grep -rn '"\*"' terraform/ | grep -i 'action\|resource'`)
+4. **IaC hygiene:** `terraform fmt -check -recursive`, then
+   `terraform init -backend=false -input=false >/dev/null && terraform validate`
+   (independent checks — a fmt failure must not mask validate; `-backend=false`
+   validates without remote-state credentials); grep for wildcard IAM
+   (`grep -rnE '"([a-zA-Z0-9-]+:)?\*"' terraform/ | grep -iE 'action|resource'` —
+   catches `"s3:*"` as well as bare `"*"`)
 5. **Debug leftovers:** `grep -rn 'print(\|console.log\|TODO\|FIXME' app/ src/ 2>/dev/null | head`
 6. **Vulnerability scan** (run what's installed, name what isn't as a gap):
    filesystem/image `trivy fs --severity HIGH,CRITICAL .` or `trivy image <tag>`;
