@@ -33,7 +33,9 @@ config is config that disappears.
   ALCOA+ Contemporaneous/Traceable applied to operations; retention is a
   compliance setting, name it explicitly).
 - LLM/RAG services additionally: token usage and cost-per-query per
-  client/feature, retrieval latency, eval-score trend after each release.
+  client/feature, retrieval latency; eval-score trend = scheduled golden-set
+  re-run against production config with an alert on regression (the minimal
+  drift monitor).
 
 ## Output
 

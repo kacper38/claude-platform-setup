@@ -26,10 +26,22 @@ stage = one verified commit). Architecture decisions go through the
    check the log row exists and cites real chunks.
 5. **IaC** — managed Postgres (RDS / Flexible Server) with pgvector, private
    networking to the LLM endpoint (Azure OpenAI VNet / Bedrock VPC endpoint),
-   secrets from vault. Verify: `terraform validate` + review plan.
-6. **Cost + eval hooks** — token count and cost-per-query metric exported;
-   golden-set retrieval eval runnable in CI (`recall@k`), report saved as
-   artifact. Verify: eval runs green on the sample set.
+   secrets from vault; source documents in S3/Blob — versioned, encrypted,
+   private access only, lifecycle policy noted in DECISIONS.md (the doc hash
+   in the schema closes the lineage loop). Verify: `terraform validate` +
+   review plan.
+6. **Cost hooks** — token count and cost-per-query metric exported per
+   client/feature. Verify: metric visible after a test query.
+7. **Eval workflow** — golden question set lives in-repo, versioned and
+   reviewed like code (start ~20 questions with expected sources/answers).
+   Harness: plain pytest over the golden set; ragas/promptfoo only past a
+   named threshold. Metrics: `recall@k` on retrieval, groundedness/citation
+   coverage on answers — thresholds are CI promotion gates, report saved in
+   the validation-evidence pack format. Any change to the release unit
+   (embedding model, chunking, prompt, LLM version) invalidates prior evals —
+   re-run before promote. Schedule a periodic re-run against production
+   config, alert on regression (the minimal drift monitor). Verify: eval green
+   on the sample set; doctor one golden answer and watch the gate fail.
 
 ## Non-negotiables
 

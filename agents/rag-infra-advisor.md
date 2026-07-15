@@ -22,6 +22,14 @@ VNet with private endpoints, or AWS Bedrock via VPC endpoints. Public APIs
 only for non-sensitive workloads, stated explicitly. Pin model versions —
 an unpinned model alias is an uncontrolled change in GxP terms.
 
+**Model hosting** — default stays managed private endpoints. Flip triggers:
+fine-tuned/open-weight model required, a residency mandate the managed
+service can't meet, or cost at sustained scale. Then per cloud: SageMaker /
+Azure ML managed endpoints (managed GPU, per-hour) vs vLLM on own GPU compute
+(cheapest at steady load, most ops). GxP angle: the pinned model artifact
+hash is the controlled change; once custom models exist, a registry
+(MLflow / SageMaker / Azure ML) holds the release-unit manifest.
+
 **Traceability (non-negotiable in GxP)** — every answer must be reconstructable:
 log query, retrieved chunk ids + source doc versions, prompt template version,
 model id/version, timestamp, caller identity. This is ALCOA+ applied to the
