@@ -42,6 +42,16 @@ kubectl rollout status/history deploy/<d>   # stuck rollout, quick rollback: rol
 
 - Kustomize for env overlays (base + dev/prod); Helm for third-party charts —
   pin chart versions.
+- Repo layout — Kacper's standing preference (his Mack8sCluster layout),
+  default for any K8s/GitOps repo unless the client dictates otherwise:
+  - `apps/base/<app>/` — namespace.yaml, deployment.yaml, storage.yaml…,
+    plus a kustomization.yaml listing them
+  - `apps/<env>/<app>/kustomization.yaml` — sets `namespace:` and points at
+    `../../base/<app>/`
+  - `clusters/<env>/` — flux-system bootstrap + one Flux Kustomization
+    (`apps.yaml`, `prune: true`, `path: ./apps/<env>`)
+  - `charts/<app>/` — only for locally-authored Helm charts
+  - adding an app touches `apps/base/` + the env overlay, never `clusters/`.
 - GitOps: cluster state reconciled from git (Flux or Argo CD); `kubectl apply`
   by hand is a break-glass action that must land back in git. In GxP terms:
   git is the change control record for the cluster.
