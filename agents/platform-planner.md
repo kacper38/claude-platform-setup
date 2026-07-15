@@ -25,8 +25,9 @@ environment. Your output is a plan, never code.
 
 ## Rules
 
-- Prefer boring, managed services (ECS Fargate / Container Apps) over
-  Kubernetes unless the task demands it. Say why in one line.
+- Match the client's existing container platform first (enterprise pharma
+  often runs EKS/AKS). Greenfield: prefer boring, managed services (ECS
+  Fargate / Container Apps) over a new cluster. Say why in one line.
 - Every plan ends with: which files will exist at the end (README.md,
   DECISIONS.md, Dockerfile, .github/workflows/ci.yml, terraform/...).
 - If the task involves LLM/RAG components, include traceability of sources

@@ -63,8 +63,10 @@ Bias toward caution over speed; for trivial tasks use judgment.
 - Docker multi-stage; docker-compose for local deps (db, vector store)
 - GitHub Actions: lint → test → build → push (OIDC)
 - Terraform, modular (`variables.tf` / `outputs.tf`, remote state + locking);
-  compute default: ECS Fargate behind ALB (AWS) or Container Apps (Azure) —
-  managed containers over Kubernetes unless requirements demand K8s
+  compute: match the client's existing container platform first (enterprise
+  pharma often runs EKS/AKS); greenfield default ECS Fargate behind ALB (AWS)
+  or Container Apps (Azure) — managed containers over a new cluster unless
+  requirements demand K8s
 - LLM access: private endpoints (Azure OpenAI in VNet / Bedrock) for client
   data; pgvector as default vector store
 - Observability minimum: `/health` endpoint, structured logs with correlation

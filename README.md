@@ -40,7 +40,6 @@ Execution bench:
 | `observability-engineer` | Prometheus/Grafana as code, symptom-based alerting, SLOs, correlation ids, LLM cost metrics |
 | `postgres-engineer` | Non-blocking migrations, EXPLAIN/indexing, restore-tested backups, RLS, pgvector tuning |
 | `code-reviewer` | General code review: correctness, security, maintainability |
-| `devops-automator` | CI/CD and infrastructure automation, scaled to the project's actual footprint |
 
 ## Skills — task lifecycle
 
