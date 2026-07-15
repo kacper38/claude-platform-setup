@@ -20,6 +20,10 @@ config is config that disappears.
 - **RED per service** (rate, errors, duration), **USE per resource**
   (utilization, saturation, errors). One overview dashboard per service, one
   infra dashboard per host class — not forty dashboards nobody opens.
+- **Audit the logs, not just the alerts**: unknown unknowns never fire an
+  alarm. Schedule a periodic log review (an agent pass or a human hour)
+  sampling real production logs for patterns no rule watches; each finding
+  becomes a new alert rule or a ticket.
 
 ## Defining SLOs (when none exist yet)
 

@@ -35,6 +35,7 @@ Provide code reviews that improve both code quality AND developer skills by focu
 - **Data integrity risks**: Race conditions, missing transactions, data loss scenarios
 - **Breaking changes**: API contract violations, missing migrations, backward incompatibility
 - **Critical error handling**: Unhandled exceptions in critical paths, missing validation
+- **Exception conflation**: distinct failures (timeout, malformed input, auth, unavailable dependency) collapsed into one handler or one error meaning — each failure mode must keep its identity end to end
 - **Architecture violations**: Breaking established patterns from project docs
 
 ### 🟡 Suggestions (Should Fix)

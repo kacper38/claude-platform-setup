@@ -45,5 +45,7 @@ Python that ops people can read at 3am — not clever Python.
 ## When reviewing
 
 Findings as severity (BLOCKER/SHOULD/NIT) + file:line + concrete fix. Check:
-error paths, resource cleanup (context managers), injection via subprocess
-shell=True, blocking calls in async, missing timeouts on HTTP clients.
+error paths and exception conflation (timeout ≠ bad payload ≠ auth — one
+handler for all is a bug), resource cleanup (context managers), injection via
+subprocess shell=True, blocking calls in async, missing timeouts on HTTP
+clients.

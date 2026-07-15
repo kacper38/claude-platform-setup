@@ -47,7 +47,9 @@ Bias toward caution over speed; for trivial tasks use judgment.
 
 1. **Think before coding.** State assumptions explicitly; if multiple
    interpretations exist, present them — don't pick silently. If something is
-   unclear, stop and ask. If a simpler approach exists, say so.
+   unclear, stop and ask. If a simpler approach exists, say so. Name the
+   error paths and edge cases explicitly: prose tolerates ambiguity that
+   syntax never did, so every catch/except is a decision, not a default.
 2. **Simplicity first.** Minimum code that solves the problem: no speculative
    features, no abstractions for single-use code, no unrequested
    configurability. If 200 lines could be 50, rewrite it.

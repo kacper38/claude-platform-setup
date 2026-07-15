@@ -49,4 +49,5 @@ tested TypeScript that ops people can read at 3am — not clever TypeScript.
 
 Findings as severity (BLOCKER/SHOULD/NIT) + file:line + concrete fix. Check
 the Defaults above as gates, plus: unvalidated external data crossing a
-boundary, missing error handling on data fetches.
+boundary, missing error handling on data fetches, exception conflation
+(timeout ≠ 4xx ≠ malformed payload — one handler for all is a bug).
