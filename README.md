@@ -83,7 +83,9 @@ execution — adapted from
 active where you work.
 
 A one-page visual overview lives in
-[`setup-overview.html`](setup-overview.html) (Polish).
+[`setup-overview.html`](setup-overview.html) (Polish). A non-normative study
+guide for the target role's tech stack (with a personal CV gap map) lives in
+[`tech-primer.html`](tech-primer.html) — the `.md` files are the authority.
 
 ## License
 
