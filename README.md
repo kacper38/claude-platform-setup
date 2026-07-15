@@ -13,10 +13,15 @@ per commit, external verification with shown output, decisions recorded.
 
 ```bash
 git clone https://github.com/kacper38/claude-platform-setup.git
-./claude-platform-setup/install.sh     # copies agents + skills to ~/.claude
+./claude-platform-setup/install.sh     # copies agents + skills to ~/.claude,
+                                       # backs up anything it would overwrite,
+                                       # writes an uninstall manifest
 cd <your-task-repo> && claude
 /task-intake                           # paste the task — the rest follows
 ```
+
+Remove it cleanly with `./install.sh --uninstall` (deletes exactly what the
+manifest lists; backups stay in `~/.claude/backups/`).
 
 ## Agents
 
