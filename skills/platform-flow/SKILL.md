@@ -52,7 +52,8 @@ before moving on. Skip or reorder stages only when the plan says so — and say 
 
 - vector store: pgvector via compose locally; managed (RDS/Flexible Server) in IaC
 - answer traceability: log which chunks/sources fed each response — GxP requirement, mention it
-- cost controls: token limits, response/embedding caching, model choice per task, cost-per-query metric
+- cost controls: token limits, response/embedding + prompt caching, model
+  choice per task, batch APIs for offline work, cost-per-query metric
 - data boundary: client data never to public API endpoints — private endpoints (Azure OpenAI in VNet / Bedrock) in the IaC story
 
 ## Timeboxing

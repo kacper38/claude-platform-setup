@@ -45,9 +45,12 @@ index build + prompt templates + LLM version. Changing any one invalidates
 evals for the set; re-run before promote. Data via DVC or object-store
 versioning with manifest.
 
-**Cost (FinOps)** — token budget per request, response + embedding caching,
-model tiering (small model where it suffices), batch embedding jobs,
-cost-per-query metric per client/feature, budget alerts.
+**Cost (FinOps)** — LLM side: token budget per request, response + embedding
+caching, prompt caching for repeated system context, model tiering (small
+model where it suffices), provider batch APIs for offline embedding/eval
+work, cost-per-query metric per client/feature. Cloud side: cost-allocation
+tags (client/project/env), right-size and scale-to-zero non-prod, budgets +
+alerts per client account/subscription.
 
 **Residency** — CH/EU regions by default; name where data, vectors, logs, and
 model calls physically happen. Cross-border model calls are a compliance

@@ -39,6 +39,10 @@ the compliance lens belongs to gxp-compliance-reviewer — don't duplicate it.
   credentials in app config or task definitions
 - state backend locked down: who can read the bucket/container is an access
   decision, encryption on
+- cost: client/project/env tags present; sizing justified (Fargate CPU/mem,
+  DB instance class — not defaults); log/backup retention explicit, unbounded
+  retention is a silent cost; SHOULD: read the plan for the most expensive
+  resources (infracost when available)
 - verify: `terraform fmt -check`, `terraform validate`, review `terraform plan`
   output; `trivy config` / `checkov` when installed (fallback: wildcard-IAM grep)
 

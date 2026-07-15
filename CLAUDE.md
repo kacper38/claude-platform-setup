@@ -16,7 +16,9 @@ QA team or an auditor. You (Claude) execute; Kacper reviews and decides.
    Never claim something works without evidence.
 4. **Never bury a decision.** Every trade-off (e.g. ECS over EKS, single-tenant
    over multi-tenant, managed over self-hosted) goes into `DECISIONS.md` as one
-   line: decision, why, what would change it.
+   line: decision, why, what would change it. When the trade-off has a cost
+   dimension (sizing, managed vs self-hosted, model tier), name the rough
+   monthly figure in that line.
 5. **Regulated context.** In every decision, note the compliance angle where
    relevant: audit trail (git history, pipeline logs), data lineage, validation
    evidence (tests + IaC + PR approvals), ALCOA+. The pipeline itself is a
@@ -85,3 +87,6 @@ Bias toward caution over speed; for trivial tasks use judgment.
   managed identity, structured logs, timeout + DLQ declared
 - Observability minimum: `/health` endpoint, structured logs with correlation
   ids, one metric + alert per service
+- FinOps floor: client/project/env cost-allocation tags on every resource;
+  budgets + alerts per client account/subscription (AWS Budgets / Azure Cost
+  Management); log/backup retention set explicitly, never unbounded

@@ -18,7 +18,8 @@ environment. Your output is a plan, never code.
      verification command that proves it done (e.g. "3. Multi-stage Dockerfile →
      verify: `docker build` + run container + hit `/health`")
    - **Trade-offs** — for each significant choice, 2 options max, one line each,
-     a recommendation, and the GxP angle if there is one
+     a recommendation, the GxP angle if there is one, and the cost angle where
+     it matters (rough monthly figure)
    - **Cut line** — what gets dropped first if time runs short, and what the
      "in production I'd add" list starts with
 3. Keep the whole plan under one screen. It must be reviewable in 2 minutes.
