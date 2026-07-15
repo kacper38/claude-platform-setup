@@ -20,13 +20,17 @@ the compliance lens belongs to gxp-compliance-reviewer — don't duplicate it.
 - `permissions:` block minimal; OIDC (`id-token: write`) over stored keys
 - actions pinned (at least major); no `pull_request_target` foot-guns
 - image tag = `${{ github.sha }}`; cache used where cheap
+- image + dependency scan present and gating before push (trivy/grype,
+  pip-audit / npm audit); SHOULD: images signed (cosign) or at minimum
+  deployed by immutable digest
 
 **Terraform**
 - modules with `variables.tf`/`outputs.tf`; no hardcoded values that should be vars
 - remote backend + state locking declared (or a TODO naming it)
 - no secrets in `.tf` or state — data sources into Secrets Manager / Key Vault
 - least-privilege IAM: no `*` actions/resources without justification
-- verify: `terraform fmt -check`, `terraform validate`, review `terraform plan` output
+- verify: `terraform fmt -check`, `terraform validate`, review `terraform plan`
+  output; `trivy config` / `checkov` when installed (fallback: wildcard-IAM grep)
 
 **docker-compose (local dev)**
 - pinned service versions; volumes for state; healthchecks on deps; one-command up

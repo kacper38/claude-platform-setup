@@ -10,7 +10,8 @@ immediately with user approval.
 
 ## Sweep (run all, show evidence)
 
-1. **Secrets in code/state:**
+1. **Secrets in code/state:** `gitleaks detect --no-banner` when installed;
+   fallback:
    `grep -rniE '(api[_-]?key|secret|password|token)\s*[:=]' --exclude-dir={.git,node_modules,.venv,.terraform} .`
    plus check `*.tfstate`, `.env` committed? (`git ls-files | grep -E '\.env|tfstate'`)
 2. **Container hygiene:** Dockerfile has `USER` (non-root)? `HEALTHCHECK`? base
@@ -20,6 +21,10 @@ immediately with user approval.
 4. **IaC hygiene:** `terraform fmt -check && terraform validate`; grep for
    wildcard IAM (`grep -rn '"\*"' terraform/ | grep -i 'action\|resource'`)
 5. **Debug leftovers:** `grep -rn 'print(\|console.log\|TODO\|FIXME' app/ src/ 2>/dev/null | head`
+6. **Vulnerability scan** (run what's installed, name what isn't as a gap):
+   filesystem/image `trivy fs --severity HIGH,CRITICAL .` or `trivy image <tag>`;
+   dependencies `pip-audit` / `npm audit --audit-level=high`;
+   IaC `trivy config terraform/` or `checkov -d terraform/`
 
 ## Map findings to compliance vocabulary
 
@@ -33,6 +38,7 @@ For each finding, add the GxP hook in one clause:
 | no tests before deploy | no validation evidence for the change |
 | mutable/no logs | breaks Contemporaneous/Enduring — server-side, retained logs |
 | untracked manual env change | breaks Original — IaC is the documented environment |
+| unscanned image/deps/IaC | unassessed risk in a validated system — the scan report is validation evidence |
 
 ## Output
 

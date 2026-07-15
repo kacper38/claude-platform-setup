@@ -16,9 +16,11 @@ before moving on. Skip or reorder stages only when the plan says so — and say 
    non-root user (`useradd -m -u 10001 appuser`), slim base, HEALTHCHECK,
    exec-form CMD, `.dockerignore`. Verify: `docker build` + run + hit `/health`.
 3. **CI** — GitHub Actions: `ruff check` → `pytest -q` → `docker build` →
-   push to registry. `permissions: {id-token: write, contents: read}`; OIDC
-   role, no stored cloud keys; tag = `${{ github.sha }}`. Verify: workflow
-   syntax (act or push), steps ordered fail-fast.
+   `trivy image --exit-code 1 --severity HIGH,CRITICAL` → push to registry.
+   Dependency audit next to lint (`pip-audit` / `npm audit --audit-level=high`
+   where a lockfile exists). `permissions: {id-token: write, contents: read}`;
+   OIDC role, no stored cloud keys; tag = `${{ github.sha }}`. Verify: workflow
+   syntax (act or push), steps ordered fail-fast, scan gating before push.
 4. **IaC** — Terraform module skeleton: `modules/network`, `modules/service`
    (ECS Fargate + ALB on AWS, or Container Apps on Azure), `variables.tf`,
    `outputs.tf` (service URL), remote backend + locking (S3+DynamoDB /

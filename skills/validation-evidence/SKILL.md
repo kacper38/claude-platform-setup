@@ -22,7 +22,9 @@ No paperwork theater: everything here is generated from real artifacts.
    Requirements with no test row are findings, not omissions to hide.
 3. **Capture check outputs.** Run and save verbatim into `evidence/<tag>/`:
    test run (`pytest -q`), lint, `docker build` digest, `terraform plan`
-   summary, image SHA + registry digest, eval report if AI-touching.
+   summary, image SHA + registry digest, vulnerability scan report (trivy /
+   pip-audit / npm audit), SBOM where configured (`syft <image> -o spdx-json`),
+   eval report if AI-touching.
 4. **Change control trail.** `git log --oneline` for the scope, PR links +
    approvers, DECISIONS.md entries relevant to this unit.
 5. **Gaps.** Explicit list: untested requirements, manual steps performed,
