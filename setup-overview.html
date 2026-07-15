@@ -240,10 +240,10 @@
 ├── <span class="hl">install.sh</span>           <span class="dim"># jeden skrypt → ~/.claude</span>
 ├── agents/              <span class="dim"># 12 agentów (§ 03)</span>
 │   <span class="dim"># rdzeń: platform-planner · infra-reviewer · gxp-compliance-reviewer · rag-infra-advisor</span>
-│   <span class="dim"># ławka: python · shell · k8s · git · observability · postgres + code-reviewer · devops-automator</span>
-└── skills/              <span class="dim"># 12 skilli — cykl zadania (§ 04) + wsparcie</span>
-    <span class="dim"># task-intake · platform-flow · rag-stack · gxp-check · validation-evidence · post-mortem</span>
-    <span class="dim"># verify · code-review · pr-prep · systematic-debugging · verification-before-completion · ponytail-review</span></pre>
+│   <span class="dim"># ławka: python · node · shell · k8s · git · observability · postgres + code-reviewer</span>
+└── skills/              <span class="dim"># 16 skilli — cykl zadania (§ 04) + wsparcie</span>
+    <span class="dim"># task-intake · platform-flow · rag-stack · data-pipeline · gxp-check · validation-evidence · post-mortem</span>
+    <span class="dim"># verify · code-review · pr-prep · systematic-debugging · verification-before-completion · ponytail ×4</span></pre>
   </section>
 
   <section>
@@ -321,13 +321,27 @@
         <div class="tools">tools: Read · Grep · Glob · Bash · Edit · Write</div><br>
         <div class="when">baza: migracje, wydajność, backupy</div>
       </div>
+      <div class="agent">
+        <div class="aid">AG-11</div>
+        <h3>node-engineer</h3>
+        <p>Produkcyjny TypeScript: Next.js (App Router, standalone output do kontenera), zod na granicach zaufania, npm ci + tsc --noEmit + vitest, debugging przez inspector — lustro python-engineera dla frontendu.</p>
+        <div class="tools">tools: Read · Grep · Glob · Bash · Edit · Write</div><br>
+        <div class="when">kod, review i debug Node/Next.js</div>
+      </div>
+      <div class="agent">
+        <div class="aid">AG-12</div>
+        <h3>code-reviewer</h3>
+        <p>Ogólny code review: poprawność, bezpieczeństwo, utrzymywalność, wydajność — proaktywnie po każdej logicznej porcji pracy, zanim zadanie dostanie status „done".</p>
+        <div class="tools">tools: Read · Grep · Glob · Bash</div><br>
+        <div class="when">po każdym logicznym kawałku kodu</div>
+      </div>
     </div>
   </section>
 
   <section>
     <div class="sec-num">§ 04</div>
     <h2>Cykl zadania</h2>
-    <div class="sec-sub">Sześć skilli · od ticketu do audytowalnego release</div>
+    <div class="sec-sub">Siedem skilli · od ticketu do audytowalnego release</div>
     <ul class="timeline">
       <li>
         <div class="t">wejście · nowe zadanie</div>
@@ -348,9 +362,14 @@
         <p>pgvector w compose i w Terraformie, schema z traceability (które źródła zasiliły którą odpowiedź), idempotentna ingestia, prywatne endpointy LLM, metryka kosztu i eval na golden secie w CI.</p>
       </li>
       <li>
+        <div class="t">feed danych / ETL</div>
+        <div class="cmd">/data-pipeline</div>
+        <p>Kontrakt źródła z kwarantanną złych rekordów, idempotentny load (hash/watermark), wiersz lineage na każdy run, quality gates wywalające run głośno, harmonogram cronem — orkiestrator dopiero po triggerze z DECISIONS.md.</p>
+      </li>
+      <li>
         <div class="t">przed każdym większym commitem</div>
         <div class="cmd">/gxp-check <span class="loop-badge">PĘTLA</span></div>
-        <p>Mechaniczny sweep: sekrety, tagi <code style="font-family:var(--mono);font-size:13px">latest</code>, wildcard IAM, brak HEALTHCHECK — każde znalezisko zmapowane na słownik GxP („to łamie Attributable, bo…").</p>
+        <p>Mechaniczny sweep: sekrety (gitleaks), tagi <code style="font-family:var(--mono);font-size:13px">latest</code>, wildcard IAM, brak HEALTHCHECK, skan podatności (trivy), lineage pipeline'ów — każde znalezisko zmapowane na słownik GxP („to łamie Attributable, bo…").</p>
       </li>
       <li>
         <div class="t">release / handoff</div>
@@ -373,8 +392,8 @@
       <div class="bar"><i></i><i></i><i></i></div>
       <div><span class="p">$</span> git clone https://github.com/kacper38/claude-platform-setup.git</div>
       <div><span class="p">$</span> ./claude-platform-setup/install.sh</div>
-      <div class="cmt">  # → ~/.claude: 6 agentów, 12 skilli (w tym verify, code-review, pr-prep,</div>
-      <div class="cmt">  #   systematic-debugging, verification-before-completion, ponytail-review)</div>
+      <div class="cmt">  # → ~/.claude: 12 agentów, 16 skilli (backup nadpisywanych plików,</div>
+      <div class="cmt">  #   manifest do --uninstall)</div>
       <div><span class="p">$</span> cd &lt;repo-zadania&gt; <span class="c">&amp;&amp;</span> claude</div>
       <div><span class="p">&gt;</span> /task-intake   <span class="cmt"># wklej treść zadania — reszta się dzieje</span></div>
     </div>
