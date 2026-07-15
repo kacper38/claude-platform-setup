@@ -193,6 +193,23 @@ aside.tip {
   border-radius: 0 6px 6px 0;
   font-size: 0.95rem;
 }
+aside.you {
+  border-left: 4px solid #6d28d9;
+  background: #f5f3ff;
+  padding: 0.8rem 1rem;
+  margin: 1.25rem 0;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.95rem;
+}
+aside.you::before {
+  content: "YOU";
+  display: block;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  color: #6d28d9;
+  margin-bottom: 0.3rem;
+}
 
 /* Takeaways */
 .takeaways {
@@ -233,7 +250,7 @@ footer.doc-footer {
   nav.sidebar { display: none; }
   main { margin-left: 0; padding: 0; }
   body { background: #fff; }
-  .tech, aside.gxp, aside.tip { break-inside: avoid; }
+  .tech, aside.gxp, aside.tip, aside.you { break-inside: avoid; }
 }
 </style>
 </head>
@@ -242,6 +259,7 @@ footer.doc-footer {
 <nav class="sidebar">
   <div class="toc-title">Contents</div>
   <ol>
+    <li><a href="#you">Where you stand</a></li>
     <li><a href="#clouds">AWS vs Azure — core services</a></li>
     <li><a href="#iac">Infrastructure as Code</a></li>
     <li><a href="#cicd">CI/CD</a></li>
@@ -268,10 +286,53 @@ footer.doc-footer {
   <p class="generated">Generated: 2026-07-15</p>
 </header>
 
+<section id="you">
+<h2>Where you stand — your CV vs this stack</h2>
+
+<p>Before the technology sections, an honest mapping of your current skill set onto this role's demands. The short version: your Azure depth, homelab Kubernetes/GitOps practice, and identity work are genuine differentiators; the highest-leverage gaps are Terraform, the AI/RAG layer, and GxP vocabulary — all learnable faster than what you already have.</p>
+
+<table class="cmp">
+<thead><tr><th>Band</th><th>Your CV</th><th>What it means for this role</th></tr></thead>
+<tbody>
+<tr>
+<td><strong>Solid today</strong></td>
+<td>Azure incl. AKS, App Gateway, App Service, Networking; Entra ID / SSO / conditional access / app registrations; Kubernetes + Helm + Flux/ArgoCD run in homelab production; Docker; Linux + TCP/IP/DNS/VPN; Prometheus/Grafana/Zabbix/Azure Monitor; Python/Bash/PowerShell/SQL; PostgreSQL and MSSQL incl. performance tuning; GitHub Actions + Azure DevOps; static analysis + secret scanning</td>
+<td>The Azure half of the role is covered, and Entra ID / federated identity is a genuine differentiator — pharma clients live in Microsoft identity. Your Flux/ArgoCD homelab is <em>real GitOps experience</em>: you have operated reconcilers, drift correction, and Helm releases in a cluster you keep alive — frame it that way, not as "hobby". PostgreSQL depth makes pgvector a short hop; MSSQL tuning transfers directly to warehouse/query work.</td>
+</tr>
+<tr>
+<td><strong>Adjacent</strong> (transferable, needs a targeted delta)</td>
+<td>AWS (EC2, S3, VPC, IAM, CloudFormation); Bicep / ARM / Ansible / CloudFormation with Terraform listed as "exploring"; TypeScript basics; observability tooling vs SLO practice; AKS experience vs EKS/ECS</td>
+<td>Your AWS covers the fundamentals (compute, storage, networking, identity, IaC) but not the container/serverless layer this role deploys to — ECS Fargate, Lambda, EKS are the delta, and your AKS mental models carry most of the way. You already think in declarative desired-state IaC from four tools; Terraform — the consultancy's default — is the <strong>single highest-leverage gap</strong>, and the delta is the state/plan/drift model, not the concept. TypeScript basics need to become "can debug a Next.js build in CI". Datadog and SLO/error-budget formalism are new, but they sit on top of monitoring instincts you already have.</td>
+</tr>
+<tr>
+<td><strong>New territory</strong></td>
+<td>LLM APIs / RAG / embeddings / evals; GxP, GAMP 5, ALCOA+; data pipeline orchestration (Airflow/Dagster/dbt); SAP/LIMS/MES integration; FinOps as a practice</td>
+<td>None of this appears on your CV, and that's fine — it's the consultancy's domain layer, learned on the job by everyone. The leverage move is vocabulary and mechanisms first (this guide), then one hands-on RAG build on pgvector. GxP is the cheapest of these to acquire and the one that most changes how your existing skills are perceived: it turns "I set up branch protection" into "I configured an attributable change-control record".</td>
+</tr>
+</tbody>
+</table>
+
+<h3>Suggested learning order</h3>
+<ol>
+<li><strong>Terraform</strong> — the house default, and you already think in desired-state IaC from Bicep/ARM/CloudFormation; the real delta is the state file: plan against state, not against the cloud. One weekend of porting a homelab or Azure setup to Terraform closes most of it.</li>
+<li><strong>GxP / GAMP 5 / ALCOA+ vocabulary</strong> — cheap to learn, it's the consultancy's differentiator, and it upgrades every interview answer you already have ("GitOps" becomes "continuous change-control evidence").</li>
+<li><strong>RAG/LLM infrastructure + evals</strong> — the product layer; build one small RAG pipeline on PostgreSQL + pgvector (your database) with a golden-set eval in CI (your GitHub Actions).</li>
+<li><strong>AWS containers &amp; serverless (ECS Fargate, EKS, Lambda)</strong> — your Azure side is already strong, so this is where cross-cloud parity is actually missing; AKS knowledge maps most of EKS for you.</li>
+<li><strong>Data pipelines / orchestration</strong> — Dagster or Airflow concepts plus dbt; your SQL and Python make this mostly a mental-model exercise (assets, idempotency, backfills).</li>
+<li><strong>Next.js build + deploy mechanics</strong> — not the framework API, just the build model: what runs at build vs request time, standalone output in Docker, env-var pitfalls in CI.</li>
+<li><strong>FinOps practices</strong> — tagging discipline, budget alerts, infracost, LLM token-cost telemetry; small individually, expected as reflexes.</li>
+<li><strong>SLO formalism</strong> — SLIs, error budgets, burn-rate alerts; the tooling you know, the vocabulary you don't.</li>
+</ol>
+
+<aside class="gxp"><strong>In a GxP context:</strong> your Entra ID / SSO / conditional-access / app-registration experience maps directly onto pharma client-identity work. ALCOA+ starts with "Attributable", and attributable access is exactly what federated identity, conditional access policies, and per-application registrations deliver — you have already built the control that auditors ask about first. Lead with this when compliance comes up.</aside>
+</section>
+
 <section id="clouds">
 <h2>AWS vs Azure — core services</h2>
 
 <p>At a consultancy, "which cloud?" is rarely your decision — the client's existing enterprise agreement, their IT department's skill base, and (in pharma especially) their Microsoft licensing footprint decide it for you. Your job is to be fluent enough in both to design the same architecture idiomatically on either, and to explain to a client's QA team why the two implementations are equivalent. This section builds that fluency around the mental-model differences first, because most cross-cloud mistakes come from carrying one cloud's assumptions into the other.</p>
+
+<aside class="you"><strong>Your bridge:</strong> You're the Azure-native reading this in the AWS direction — the resource-group and Entra ID mental models are already yours, so the translation table below works backwards for you. Your AWS (EC2, S3, VPC, IAM, CloudFormation) covers the account/region/IAM fundamentals; the real gap is that you've never had to live with "no resource groups, many accounts" as an organizing principle, and the AWS managed-container layer (ECS/Fargate) further down. Skim the Azure halves, read the AWS halves closely.</aside>
 
 <h3>Mental models: how each cloud organizes the world</h3>
 
@@ -394,6 +455,8 @@ footer.doc-footer {
 <h2>Infrastructure as Code — Terraform vs Pulumi vs CloudFormation vs Bicep</h2>
 
 <p>Every IaC tool answers three questions differently: <em>how do you describe the desired state</em> (language model), <em>how does the tool know what actually exists</em> (state management), and <em>how do you see what will change before it changes</em> (plan/preview). Almost every real-world trade-off between these tools falls out of those three design decisions. In a GxP consultancy you will additionally be judged on a fourth axis: can the tool produce audit-grade evidence of what was deployed, when, by whom, and against which approved plan.</p>
+
+<aside class="you"><strong>Your bridge:</strong> You think in Bicep/ARM and CloudFormation: declarative resources and desired state are already your native mode, and Ansible gives you the imperative contrast. The one genuinely new mental model is Terraform's state file — Terraform plans against <em>its own recorded state</em>, not against Azure/AWS, which is where drift, <code>import</code>, and state-locking pain come from (Bicep and CloudFormation never made you think about this because the cloud <em>was</em> the state). Since Terraform is the consultancy default and you're at "exploring", this section is your highest-leverage read; the language-model comparison you can skim, the state and plan/apply sections you should study.</aside>
 
 <h3>The language model: where expressiveness comes from, and what it costs</h3>
 
@@ -560,6 +623,8 @@ footer.doc-footer {
 
 <p>All three systems execute YAML-defined jobs on ephemeral compute in response to git events. The differences that matter in practice are not features on a checklist — they are (1) how the pipeline model composes and shares logic, (2) how the runner trust boundary works, (3) how identity is federated to your clouds, and (4) how approvals and environment gates produce evidence. In a GxP consultancy, the fourth point is often the deciding one: the pipeline is itself a regulated tool, and the question "can this system prove who approved what, when, against which commit?" carries as much weight as build speed.</p>
 
+<aside class="you"><strong>Your bridge:</strong> You run GitHub Actions and Azure DevOps already, and your build-optimization work means the caching/artifact material below is review, not news. Your deltas are three: OIDC federation to AWS (you've done federated identity in Entra — the same trust-policy thinking, different claim syntax), pipelines for Python + Next.js + AI workloads (eval suites as CI gates, model/prompt versioning in artifacts), and GitLab CI as a possible client stack — read its section for vocabulary, don't practice it until a client demands it.</aside>
+
 <h3>Pipeline models and where they break</h3>
 
 <p>The underlying mechanism to understand: every CI system must answer "what is the unit of reuse, and what is the unit of isolation?" Jobs are the isolation unit everywhere (fresh VM/container per job), which means <em>anything a later job needs from an earlier job must be explicitly transported</em> — via artifacts, caches, or a registry. This is the root cause of most CI pain: state you had in your terminal ("it builds locally") evaporates between jobs. Teams that fight CI are usually fighting implicit state.</p>
@@ -682,6 +747,8 @@ footer.doc-footer {
 <h2>Containers &amp; orchestration — Docker/Podman, ECS/Container Apps, EKS/AKS</h2>
 
 <p>The container layer is where most of your "validation evidence" is actually manufactured: the image digest is the immutable artifact, the registry is the controlled repository, and the orchestrator is the mechanism that guarantees what's running in production matches what was approved. Every decision in this section — daemon vs daemonless, managed containers vs Kubernetes, push-based vs GitOps deploys — ultimately affects how easily you can answer the auditor's core question: <em>"prove that what ran on this date was the version you validated."</em></p>
+
+<aside class="you"><strong>Your bridge:</strong> Your homelab runs Flux and ArgoCD reconciling a real cluster — that <em>is</em> GitOps experience, and with Helm and self-hosted Kubernetes on top, most of this section is your home turf; say so in interviews instead of discounting it as a lab. The deltas: managed-cluster glue on the AWS side (IRSA is the EKS analogue of the workload identity you know from AKS), and ECS Fargate, which has no homelab equivalent because its whole point is having no cluster — spend your hands-on time there. The Docker-vs-Podman debate you can safely skim.</aside>
 
 <h3>Container runtimes: Docker vs Podman</h3>
 
@@ -858,6 +925,8 @@ footer.doc-footer {
 
 <p>Observability tooling decisions are rarely about features — all four stacks can draw a latency graph. The real trade-offs are <strong>where the data lives</strong> (your account vs a vendor's), <strong>who pays the operational cost</strong> (your ops time vs a SaaS bill), and <strong>how the pricing model shapes engineering behavior</strong>. In consultancy work there's a fourth axis: the client often already has an observability stack, and the cheapest correct answer is frequently "integrate with theirs" rather than "install ours."</p>
 
+<aside class="you"><strong>Your bridge:</strong> Prometheus/Grafana, Zabbix, and Azure Monitor are on your CV — the tooling half of this section is covered, and you can skim the "four stacks" mechanics. Your actual gaps are CloudWatch specifics (log groups, metric filters, alarm composition), Datadog's pricing-shaped usage patterns, and above all SLO/error-budget formalism — SLIs, burn-rate alerts, paging on user pain rather than CPU. The concepts subsection, not the tooling subsection, is your homework here; OpenTelemetry is the one new tool worth hands-on time.</aside>
+
 <h3>The four stacks</h3>
 
 <div class="tech">
@@ -999,6 +1068,8 @@ footer.doc-footer {
 
 <h3>Why regulated clients want a cloud broker between them and the model</h3>
 <p>When a pharma client says "our data cannot leave our environment," they are not making a vague policy statement — they are describing a network topology and a contractual boundary. A direct call to <code>api.openai.com</code> or <code>api.anthropic.com</code> means patient-adjacent or trade-secret data traverses the public internet (TLS-encrypted, but still), lands in an infrastructure the client has no contract governing, in a region the client does not choose, processed under the provider's consumer-grade or generic enterprise terms. For a QA team validating a system under GxP, that is three uncontrolled variables: <strong>where</strong> the data goes, <strong>who</strong> can see it, and <strong>what version</strong> of the processing logic (the model) touched it.</p>
+
+<aside class="you"><strong>Your bridge:</strong> The LLM layer is new territory for you, but the infrastructure underneath it is not: private endpoints, VNet integration, private DNS, and App Gateway routing are exactly your Azure networking experience — Azure OpenAI in a VNet is "just another private PaaS endpoint" to someone who has wired those before. Read this section for the broker/contract logic and the model-versioning discipline, which are genuinely new; the network-boundary half you should recognize and can move through quickly, translating to Bedrock + PrivateLink on the AWS side.</aside>
 <p>Cloud-broker services — Azure OpenAI Service and AWS Bedrock — exist precisely to collapse those variables into things the client already controls. The model runs inside Microsoft's or Amazon's infrastructure, in a region the client picks, under the same master service agreement, DPA, and compliance certifications (SOC 2, ISO 27001, HIPAA BAA) that already cover the rest of the client's cloud estate. Crucially, both services contractually commit that <strong>prompts and completions are not used to train models</strong> and are not shared with the upstream model vendor (OpenAI or Anthropic). That single clause is often the difference between "legal signs off" and "project blocked."</p>
 <p>The second, less obvious reason: <strong>network reachability</strong>. A broker service can be exposed as a private endpoint inside the client's own virtual network, meaning the LLM becomes just another internal service — subject to the same firewall rules, flow logs, and egress controls as a database. A direct SaaS API can never be pulled inside the perimeter; the best you can do is route egress through an inspecting proxy, which is a compensating control, not a boundary.</p>
 
@@ -1137,6 +1208,8 @@ footer.doc-footer {
 <h2>RAG systems &amp; vector stores</h2>
 
 <p>RAG (retrieval-augmented generation) exists because of one mechanism: an LLM's weights are frozen and its context window is the only channel for fresh or private knowledge. Everything in a RAG architecture is downstream of that fact — you are building a system whose job is to select the few thousand tokens of your corpus most likely to make the model answer correctly, and to prove afterwards which tokens those were. In pharma, the second half matters as much as the first.</p>
+
+<aside class="you"><strong>Your bridge:</strong> RAG itself is new to you, but the default vector store is not: pgvector is an extension inside PostgreSQL, a database you already run and tune — indexing strategy, query plans, and transactional ingestion are your MSSQL/PostgreSQL performance instincts applied to a new index type. That makes this the cheapest "new territory" section to convert into hands-on credibility: build one small ingestion → embed → retrieve pipeline on Postgres you host yourself. The genuinely new material is chunking/embedding trade-offs and the traceability schema; the storage layer you can treat as home ground.</aside>
 
 <h3>Ingestion: where most RAG quality is won or lost</h3>
 
@@ -1317,6 +1390,8 @@ footer.doc-footer {
 
 <p>Two problems live in this section, and they meet in the CI pipeline. First: how do you know a RAG system got better or worse after a change, when the output is free text and "correct" is fuzzy? Second: when the managed API (Azure OpenAI, Bedrock) stops being the right answer, how do you serve models yourself without burning GPU budget? In a GxP consultancy, the first question is not optional — evals <em>are</em> your validation evidence. A pharma client's QA team will not accept "we tried it and it seemed fine."</p>
 
+<aside class="you"><strong>Your bridge:</strong> Treat evals as what they are — a test suite in CI — and this section stops being exotic: golden sets in git, PR-reviewed changes, gates in GitHub Actions are the same mechanics you already operate, applied to fuzzy outputs. The new concepts are the metrics (retrieval recall, faithfulness, LLM-as-judge) — learn those. The self-hosting half (vLLM, TGI, SageMaker) leans on GPU scheduling; your self-hosted Kubernetes background helps you read it, but managed APIs are the default here, so treat self-hosting as awareness-level until a client requirement (GPU, data residency) triggers it.</aside>
+
 <h3>Evaluation workflows: treating quality like a test suite</h3>
 
 <h4>Golden question sets — versioned like code, because they are code</h4>
@@ -1438,6 +1513,8 @@ footer.doc-footer {
 <h2>Data engineering — ETL/ELT, orchestration, data quality</h2>
 
 <p>In an AI-product consultancy, "data engineering" is not a separate discipline from platform work — it is the part of the platform that decides whether the RAG system answers from yesterday's SOPs or last quarter's. Four pipeline families recur: <strong>training/fine-tuning data prep</strong> (batch, heavy transforms, versioned outputs), <strong>RAG ingestion refresh</strong> (extract documents → chunk → embed → upsert into a vector store, on a schedule or event), <strong>analytics feeds</strong> (usage, cost, quality metrics into a warehouse), and <strong>operational feeds</strong> (syncing reference data between systems). They share a skeleton — extract, transform, load, verify — but differ wildly in how much failure they tolerate. An analytics dashboard being six hours stale is a Slack message; a RAG index missing the latest deviation report in a pharma QA workflow is a finding.</p>
+
+<aside class="you"><strong>Your bridge:</strong> Orchestrators (Airflow/Dagster) and dbt are new names, but the substrate is yours: pipelines here are Python + SQL + containers on a schedule, and your MSSQL tuning experience means the ELT "transform in the warehouse" model will feel natural. Start by recognizing that a cron-scheduled container you could build today <em>is</em> the recommended starting point below — the delta is knowing the two triggers (cross-pipeline dependencies, backfills) that justify a real orchestrator, plus the idempotency and lineage disciplines. Ansible playbook thinking (idempotent, re-runnable) transfers directly to ingestion-job design.</aside>
 
 <h3>ETL vs ELT — why the order matters</h3>
 <p>The distinction is about <em>where transformation happens and who pays for it</em>. In <strong>ETL</strong>, data is transformed in flight — in the pipeline's own compute — and only the cleaned result lands in the target. In <strong>ELT</strong>, raw data lands first, and transformation happens inside the destination (typically SQL in a warehouse, popularised by <code>dbt</code>). The mechanism behind the trade-off: warehouses became cheap enough at scanning and transforming that shipping raw data and transforming "at rest" beats maintaining a separate transformation tier. ELT gives you replayability for free — the raw layer is still there, so a bug in transformation logic means re-running SQL, not re-extracting from a source system that may no longer have the data. That replayability is also an audit property: you can prove what the source looked like at ingestion time.</p>
@@ -1589,6 +1666,8 @@ footer.doc-footer {
 
 <p>In pharma, the interesting data for an AI/RAG platform almost never lives in a greenfield database you control. It lives in the client's SAP system, their LIMS, their MES batch records, a plant historian, and a validated document management system. As the platform engineer, your job is to get that data out <em>reliably, provably, and without touching the validated state of the source system</em>. The last part is the one that surprises people: in a GxP environment, source systems are validated, and anything that writes to them — or even reads from them in an unsanctioned way — can invalidate that state. That's why integration in pharma is dominated by sanctioned interfaces, contracts, and evidence, not by clever direct-DB tricks.</p>
 
+<aside class="you"><strong>Your bridge:</strong> SAP, LIMS, and MES are new domain systems, but the integration mechanics are things you already do: sanctioned APIs behind firewalls, VPN/private connectivity, DNS for private endpoints, service accounts with least privilege — your networking and Windows Server/AD background covers the plumbing, and your Entra ID work covers the "how does our service authenticate to their estate" question that dominates week one. Read this section for the domain vocabulary (what a LIMS result or MES batch record <em>is</em>) and the don't-touch-validated-systems rule; the connectivity patterns you can nod through.</aside>
+
 <h3>The systems you'll integrate with</h3>
 
 <div class="tech">
@@ -1728,6 +1807,8 @@ footer.doc-footer {
 
 <p>This is the frame that everything else in this guide sits inside. In a GxP consultancy, the platform you build is not "infrastructure that happens to run a regulated app" — the platform itself becomes part of the regulated system, because it produces the evidence that regulators and client QA teams will inspect. Understanding <em>why</em> the rules exist lets you make engineering decisions that satisfy them cheaply, instead of bolting on documentation afterwards (which is exactly the anti-pattern the industry is trying to escape).</p>
 
+<aside class="you"><strong>Your bridge:</strong> This is your biggest pure-knowledge gap and the cheapest to close — there is no tooling to install, only vocabulary and mappings to learn. The encouraging part: you already operate most of the underlying controls (branch protection, PR review, pipeline logs, immutable images, Entra ID conditional access); what's missing is the ability to name them in GAMP 5 / ALCOA+ / Part 11 terms so a pharma QA team recognizes them as compliance controls. Read this section twice, and practice re-describing your homelab GitOps setup as a change-control system — that translation is the interview skill.</aside>
+
 <h3>What GxP actually means</h3>
 
 <p>GxP is the umbrella term for "Good <em>x</em> Practice" regulations, where <em>x</em> is a lifecycle stage of a medicinal product:</p>
@@ -1864,6 +1945,8 @@ footer.doc-footer {
 <h2>Security — secrets, identity, scanning, supply chain</h2>
 
 <p>Security in a GxP platform has a double role: it protects the system, and it <em>produces evidence</em>. An auditor doesn't just ask "are secrets encrypted?" — they ask "show me who accessed this credential, when, and under what identity." That reframes almost every tooling choice below: the winning option is usually the one whose access model is attributable and whose logs are automatic, not the one with the most features.</p>
+
+<aside class="you"><strong>Your bridge:</strong> You arrive with a real head start: static code analysis and secret scanning are on your CV, so the scanning-ladder subsection is partly review, and your Entra ID / federated identity / conditional-access work is exactly the identity thinking that OIDC-in-CI requires — a GitHub Actions trust policy is an app registration with a stricter subject claim. Your deltas: AWS-side mechanics (IAM trust policies, Secrets Manager vs the Key Vault patterns you know) and the supply-chain layer (image signing, SBOM, provenance), which is likely new end to end. Skip nothing in supply chain; skim the secrets-101 material.</aside>
 
 <h3>Secrets management</h3>
 
@@ -2009,6 +2092,8 @@ footer.doc-footer {
 <h2>FinOps — cloud and LLM cost optimization</h2>
 
 <p>FinOps in a consultancy context is not about shaving pennies off a bill — it is about being able to answer, at any moment, "what does client X's RAG product cost to run, per environment, per feature, per answer?" If you cannot answer that, you cannot price contracts, you cannot detect a runaway workload before it burns a month's margin, and you cannot have a credible conversation with a client's procurement or QA team. The reason FinOps is an engineering practice rather than an accounting one is structural: by the time cost shows up in an invoice, every decision that caused it — instance class, log retention, model choice, missing cache — was made weeks earlier in a PR. Accounting sees the lagging indicator; engineering owns every leading indicator. The only place cost can actually be controlled is in architecture and code review.</p>
+
+<aside class="you"><strong>Your bridge:</strong> FinOps as a named practice is new to you, but every mechanism in this section rides on skills you have: tagging is IaC discipline (your Bicep/CloudFormation habits), cost telemetry is the same structured-logging-plus-Grafana muscle as your monitoring work, and budget alerts are Azure Monitor / CloudWatch alarms with a different metric. The genuinely new material is LLM token economics and the cost-allocation vocabulary (showback, unit cost per query) — read those closely; the tooling half you'll absorb in an afternoon of wiring infracost into a pipeline you already own.</aside>
 
 <h3>Cloud-side cost control</h3>
 
@@ -2260,6 +2345,8 @@ footer.doc-footer {
 <h2>Languages &amp; frameworks — Python/FastAPI and Node/Next.js for platform engineers</h2>
 
 <p>A platform engineer at an AI consultancy sits between two worlds: the backend/automation world, which in this stack is Python, and the product frontend world, which is Node/TypeScript/Next.js. You will not be the primary application developer in either, but you will be the person who containerizes both, wires them into CI/CD, debugs their builds at 11pm before a client demo, and explains to a QA auditor why the artifact in production is the artifact that was tested. That framing tells you what to learn: not the framework's full API surface, but its <em>build and runtime model</em> — what happens at build time vs request time, what the toolchain guarantees, and where the reproducibility gaps hide.</p>
+
+<aside class="you"><strong>Your bridge:</strong> Python is on your CV, so the FastAPI half is mostly about adopting the modern toolchain (uv, ruff, mypy, pytest as CI gates) rather than learning a language — fast to close. The Node/Next.js half is your real delta: "TypeScript basics" needs to become "can containerize a Next.js app, explain build-time vs request-time rendering, and debug why an env var is baked into the client bundle" — that's the platform-engineer bar for this role, well short of frontend development. Focus on the build/runtime model subsections; skip framework API details entirely.</aside>
 
 <h3>Python 3.12 + FastAPI — the backend and automation default</h3>
 
