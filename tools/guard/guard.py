@@ -11,7 +11,7 @@ stdout, reason on stderr); 1 = guard itself failed (nothing on stdout).
 
 Usage:
   guard.py hook pre [--wrapper claude|github]   run every PreToolUse rule
-  guard.py hook <rule> [--wrapper ...]          run one rule (tests, debugging)
+  guard.py hook <rule> [--wrapper ...]          run one rule (tests, debugging, SubagentStart -> fan-out)
   guard.py hook capture [--wrapper ...]         record redacted raw input, never blocks
   guard.py rules | help | version
 """
@@ -21,11 +21,12 @@ import json
 import os
 import re
 import shlex
+import socket
 import subprocess
 import sys
 from typing import Callable, Optional
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 
 # ----------------------------------------------------------------------------
 # Harness normalization
@@ -655,6 +656,126 @@ def rule_scratch_md(ev: Event, cfg: dict) -> Optional[Decision]:
 
 
 # ----------------------------------------------------------------------------
+# protected-branch: no edits and no commits on a protected branch (plan step 2.2)
+# ----------------------------------------------------------------------------
+
+PROTECTED_MSG = (
+    "protected-branch: {what} on '{branch}' ({root}). Work on a branch (git switch -c <step>) and open a PR; "
+    "the protected set comes from .claude/guard.json."
+)
+
+
+def _git_c_dir(seg: list[str], cwd: str) -> str:
+    """Directory a `git -C <dir> …` call runs in; cwd when no -C is given."""
+    for i, t in enumerate(seg[:-1]):
+        if t == "-C":
+            return _expand(seg[i + 1], cwd)
+        if t.startswith("-C") and len(t) > 2:
+            return _expand(t[2:], cwd)
+    return cwd
+
+
+def rule_protected_branch(ev: Event, cfg: dict) -> Optional[Decision]:
+    if ev.event != "PreToolUse":
+        return None
+    protected = protected_branches(cfg)
+    if not protected:
+        return None
+    if ev.kind in ("write", "edit"):
+        p = ev.abspath()
+        if not p or ".git" in p.split(os.sep):
+            return None
+        root = git_root(os.path.dirname(p))
+        if root is None:
+            return None
+        branch = current_branch(root)
+        if branch in protected:
+            rel = os.path.relpath(p, root)
+            return "deny", PROTECTED_MSG.format(what=f"edit of {rel}", branch=branch, root=root)
+        return None
+    if ev.kind == "shell" and ev.command:
+        for seg in segments(strip_heredocs(ev.command)):
+            sub, _rest = _git_subcommand(seg)
+            if sub != "commit":
+                continue
+            where = _git_c_dir(seg, ev.cwd)
+            branch = current_branch(where)
+            if branch in protected:
+                return "deny", PROTECTED_MSG.format(what="`git commit`", branch=branch, root=where)
+    return None
+
+
+# ----------------------------------------------------------------------------
+# fan-out: log every spawn; ask at the 6th and every 10 after (plan step 2.3)
+# ----------------------------------------------------------------------------
+
+FANOUT_FIRST, FANOUT_EVERY = 6, 10
+LLAMA_PORT = 8012
+FANOUT_MSG = (
+    "Fan-out guard: spawn #{n} in this session (a prompt at #{first}, then every {every}). "
+    "Cost guardrails: one shared brief, <=5 agents, no two agents with the same job. Continue?{llama}"
+)
+LLAMA_NOTE = " llama-server is up on :{port} (39 GB of RAM in use): parallel agents will swap."
+
+
+def spawn_log_path(cfg: dict) -> str:
+    return os.path.join(telemetry_dir(cfg), "spawns.jsonl")
+
+
+def log_spawn(ev: Event, cfg: dict) -> int:
+    """Append one line to the spawn log; return how many PreToolUse spawns this session has, this one included."""
+    entry = {
+        "ts": _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "event": ev.event,
+        "harness": ev.harness,
+        "session": ev.session,
+        "agent": _first_str(ev.args, "subagent_type", "agent_type", "agent", "name") or ev.raw.get("agent_type"),
+        "model": _first_str(ev.args, "model"),
+        "agent_id": ev.raw.get("agent_id"),
+        "cwd": ev.cwd,
+    }
+    path = spawn_log_path(cfg)
+    count = 0
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as fh:
+                for line in fh:
+                    try:
+                        row = json.loads(line)
+                    except ValueError:
+                        continue
+                    if row.get("session") == ev.session and row.get("event") == "PreToolUse":
+                        count += 1
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(entry, sort_keys=True) + "\n")
+    except OSError as exc:
+        print(f"guard: spawn log failed: {exc}", file=sys.stderr)
+    return count + 1 if ev.event == "PreToolUse" else count
+
+
+def llama_server_up(port: int = LLAMA_PORT) -> bool:
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=0.3):
+            return True
+    except OSError:
+        return False
+
+
+def rule_fan_out(ev: Event, cfg: dict) -> Optional[Decision]:
+    if ev.event == "SubagentStart":
+        log_spawn(ev, cfg)
+        return None
+    if ev.event != "PreToolUse" or ev.kind != "spawn":
+        return None
+    n = log_spawn(ev, cfg)
+    if n < FANOUT_FIRST or (n - FANOUT_FIRST) % FANOUT_EVERY:
+        return None
+    llama = LLAMA_NOTE.format(port=LLAMA_PORT) if llama_server_up() else ""
+    return "ask", FANOUT_MSG.format(n=n, first=FANOUT_FIRST, every=FANOUT_EVERY, llama=llama)
+
+
+# ----------------------------------------------------------------------------
 # Registry
 # ----------------------------------------------------------------------------
 
@@ -668,6 +789,8 @@ RULES: dict[str, Rule] = {
     "deploy-ask": rule_deploy_ask,
     "egress-guard": rule_egress_guard,
     "scratch-md": rule_scratch_md,
+    "protected-branch": rule_protected_branch,
+    "fan-out": rule_fan_out,
 }
 PRE_RULES = list(RULES)
 
