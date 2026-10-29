@@ -105,6 +105,19 @@ definition-of-ready fields.
 - `.githooks/commit-msg` (`core.hooksPath`, set by the installer) enforces
   `type(scope): imperative subject`, no closing keywords; CI re-checks the PR range.
 
+## Memory and ledger (Claude Code, home machine)
+
+- `tools/memory/memstore.py init` puts `~/.claude/projects/*/memory/**` under a
+  bare repo (`~/.claude/memory-store.git`); the PostToolUse hook commits every
+  memory write and validates the frontmatter (`type`, `status`, `stale_after`
+  for project/reference facts, `verified_on`). `index --write` rebuilds
+  `MEMORY.md`, `triage` lists stale or unverified files, `deprecate` retires one.
+  Push stays off until a private remote exists and `KZ_MEMORY_PUSH` names the projects.
+- `tools/telemetry/ledger.py hook` (SessionEnd) appends one line per session with
+  per-model tokens and cost, subagent share and spawns; `ledger.py cost --days 7`
+  prints the week per project and model plus hook prompts per guard rule.
+  Prices live in `tools/telemetry/prices.json` (dated; unknown tiers stay `null`).
+
 ## Working agreement
 
 [`AGENTS.md`](AGENTS.md) — eight non-negotiables (plan first, small steps,

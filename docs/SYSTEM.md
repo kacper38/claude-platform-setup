@@ -1,6 +1,6 @@
 # System description — claude-platform-setup
 
-Status: 2026-10-29, after step 3.3 (2.8 dogfood issues pending the owner's labels-sync) of `docs/PLAN-2026-10-mature-setup.md`.
+Status: 2026-10-29, after step 3.6 (2.8 dogfood issues pending the owner's labels-sync; 3.4 remote and user-scope hooks pending the owner) of `docs/PLAN-2026-10-mature-setup.md`.
 Components marked *planned* do not exist yet; the plan step that creates them is named.
 
 ## Purpose
@@ -26,8 +26,10 @@ external verification with shown output, decisions recorded.
 | `.githooks/commit-msg` + `tools/commit_msg.py` | exists (3.1) | git via `core.hooksPath`; CI job `commit-msg` on the PR range | commit messages |
 | `tools/egress/egress_screen.py` | exists (3.2) | `fresh-review`, `gemini-review`, anything that sends material out | the material, held or sent, never dropped |
 | `bin/fresh-review` + `tools/review/prompt.md` (= `.github/instructions/review.instructions.md`) | exists (3.3) | `claude -p` at home (Opus, no tools, JSON schema); Copilot code review at work | branch diff; receipt `.git/fresh-review/<sha>.json` |
-| memory store, session ledger | planned (3.4–3.6) | Claude Code only | memory files (private repo); token usage (local) |
+| `tools/memory/memstore.py` + `~/.claude/memory-store.git` | exists (3.4 store + hook + push allowlist; 3.5 schema, `validate`, `index`, `triage`, `deprecate`) | Claude Code only: PostToolUse hook commits and validates, SessionStart digest | memory files under `~/.claude/projects/*/memory/`; one commit per write; push off until `KZ_MEMORY_PUSH` and a private remote |
+| `tools/telemetry/ledger.py` + `prices.json` | exists (3.6) | Claude Code SessionEnd hook; humans (`ledger.py cost --days 7`) | `~/.claude/telemetry/sessions-YYYY-MM.jsonl`: per-model tokens and cost, subagent share, spawns, parse errors; local only |
 | `~/.claude/telemetry/spawns.jsonl` | exists (2.3) | fan-out rule; humans (`tail`) | one line per subagent spawn: ts, harness, agent, model; local only |
+| `~/.claude/telemetry/decisions.jsonl` | exists (3.6, guard 0.4.1) | `ledger.py cost` (prompts per rule) | one line per ask/deny: ts, verdict, rules, tool, harness, session; no command text; local only |
 
 Flow: a human approves a plan → steps become GitHub issues (`tracker new`, a human
 promotes with `owner ready`) → an agent claims one, works on a branch, opens a PR with `Refs #N` → CI and an independent
@@ -52,5 +54,5 @@ every tool call in both harnesses.
 
 - This repo: public, MIT. No client data, no credentials, no transcripts, no hook captures before redaction.
 - Telemetry (`~/.claude/telemetry/`) and raw hook captures: local to the machine; only redacted fixtures are committed.
-- Memory: private GitHub repo, own notes only; client facts never enter memory.
+- Memory: `~/.claude/memory-store.git` locally, pushed only to a private GitHub repo and only for allowlisted projects; own notes only; client facts never enter memory.
 - Work pilot: only the kit's public files cross over; findings stay in the work repo's own `DECISIONS.md`.
