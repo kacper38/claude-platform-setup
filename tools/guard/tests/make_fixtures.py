@@ -141,14 +141,29 @@ CASES: dict = {
         ("allow", "write", {"path": "src/README.md", "content": "# x"}),
         ("allow", "write", {"path": "notes.txt", "content": "x"}),
     ],
+    # the envelope cwd /work/repo is not a repository on disk: blocking cases live in test_protected_branch.py
+    "protected-branch": [
+        ("allow", "write", {"path": "x.md", "content": "x"}),
+        ("allow", "edit", {"path": "src/a.py"}),
+        ("allow", "read", {"path": "README.md"}),
+        *shell("allow", "git status", "git log --oneline -3", "git switch -c step-2"),
+    ],
+    # the first spawns of a session pass; the 6th/16th/… need the spawn log and live in test_fan_out.py
+    "fan-out": [
+        ("allow", "spawn", {"agent": "python-engineer", "model": "opus"}),
+        ("allow", "spawn", {"agent": "Explore"}),
+        *shell("allow", "ls -la"),
+    ],
 }
 
 ENVELOPES = {
     "claude": {
         "shell": "PreToolUse-Bash", "read": "PreToolUse-Read", "write": "PreToolUse-Write", "edit": "PreToolUse-Edit",
+        "spawn": "PreToolUse-Agent",
     },
     "copilot": {
         "shell": "PreToolUse-bash", "read": "PreToolUse-view", "write": "PreToolUse-create", "edit": "PreToolUse-edit",
+        "spawn": "PreToolUse-task",
     },
 }
 
@@ -156,6 +171,13 @@ ENVELOPES = {
 def tool_input(harness: str, kind: str, payload: dict) -> dict:
     if kind == "shell":
         return {"command": payload["command"]}
+    if kind == "spawn":
+        ti = {"description": "d", "prompt": "p"}
+        if harness == "claude":
+            ti["subagent_type"] = payload["agent"]
+            if payload.get("model"):
+                ti["model"] = payload["model"]
+        return ti  # the Copilot `task` shape is synthesized; replace via a capture at work (step 1.3)
     path = payload["path"]
     if harness == "claude":
         ti = {"file_path": path}
@@ -173,7 +195,7 @@ def tool_input(harness: str, kind: str, payload: dict) -> dict:
 
 
 def slug(payload: dict) -> str:
-    text = payload.get("command") or payload.get("path") or ""
+    text = payload.get("command") or payload.get("path") or payload.get("agent") or ""
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:40]
 
 

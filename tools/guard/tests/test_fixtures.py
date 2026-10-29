@@ -1,6 +1,7 @@
 """The fixture corpus: every rule, both harnesses, allow/ask/deny; the corpus must equal the generator."""
 import importlib.util
 import json
+import os
 import pathlib
 
 import pytest
@@ -22,7 +23,7 @@ def test_fixture(guard, rule, harness, decision, path):
     raw = json.loads(path.read_text())
     ev = guard.Event(raw)
     assert ev.harness == harness, path
-    cfg = {**guard.DEFAULTS, **raw.get("_fixture", {}).get("config", {})}
+    cfg = {**guard.load_config(os.getcwd()), **raw.get("_fixture", {}).get("config", {})}  # env -> tmp telemetry
     got = guard.RULES[rule](ev, cfg)
     if decision == "allow":
         assert got is None, f"{rule}/{harness}/{path.name}: unexpected {got}"
@@ -32,7 +33,8 @@ def test_fixture(guard, rule, harness, decision, path):
         assert got[1], "a reason is mandatory"
 
 
-FILESYSTEM_RULES = {"scratch-md"}  # blocking cases depend on a real tree: see test_scratch_md.py
+# blocking cases need a real tree or prior state: see test_<rule>.py
+FILESYSTEM_RULES = {"scratch-md", "protected-branch", "fan-out"}
 
 
 def test_every_rule_has_a_corpus(guard):

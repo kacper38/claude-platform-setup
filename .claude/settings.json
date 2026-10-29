@@ -13,6 +13,18 @@
           }
         ]
       }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 tools/guard/guard.py hook fan-out --wrapper claude",
+            "timeout": 5,
+            "statusMessage": "guard"
+          }
+        ]
+      }
     ]
   },
   "permissions": {
