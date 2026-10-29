@@ -992,7 +992,7 @@ def run_hook(target: str, wrapper: Optional[str]) -> int:
         return 0
     names = PRE_RULES if target == "pre" else [target]
     decisions: list[Decision] = []
-    fired: list[str] = []
+    fired: dict[str, str] = {}
     for name in names:
         rule = RULES.get(name)
         if rule is None:
@@ -1000,15 +1000,16 @@ def run_hook(target: str, wrapper: Optional[str]) -> int:
         d = rule(ev, cfg)
         if d:
             decisions.append(d)
-            fired.append(name)
+            fired[name] = d[0]
     final = combine(decisions)
     if final:
         log_decision(final, fired, ev, cfg)
     return respond(final, ev.event or "PreToolUse")
 
 
-def log_decision(decision: Decision, fired: list[str], ev: Event, cfg: dict) -> None:
+def log_decision(decision: Decision, fired: dict[str, str], ev: Event, cfg: dict) -> None:
     """One line per ask/deny in <telemetry>/decisions.jsonl, so `ledger.py cost` can show prompt fatigue per rule.
+    `rules` maps each rule that spoke to its own verdict; `verdict` is the combined one.
     No command text or paths: the rule names and the tool are enough to tune thresholds."""
     entry = {
         "ts": _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),

@@ -91,6 +91,7 @@ def test_ask_and_deny_are_logged_to_decisions_jsonl(guard_path, tmp_path, monkey
     assert run(guard_path, ["hook", "pre"], _bash("claude", "git status")).returncode == 0
     rows = [json.loads(ln) for ln in (tmp_path / "t" / "decisions.jsonl").read_text().splitlines()]
     assert [r["verdict"] for r in rows] == ["ask", "deny"]
-    assert rows[0]["rules"] == ["delete-guard"] and rows[0]["tool"] == "Bash" and rows[0]["harness"] == "claude"
-    assert "git-guard" in rows[1]["rules"]
+    assert rows[0]["rules"] == {"delete-guard": "ask"} and rows[0]["tool"] == "Bash" and rows[0]["harness"] == "claude"
+    assert rows[1]["rules"]["git-guard"] == "deny"
+    assert all(v == "ask" for k, v in rows[1]["rules"].items() if k != "git-guard")  # per-rule, not the combined one
     assert not any("rm -rf" in json.dumps(r) or "--force" in json.dumps(r) for r in rows)  # no command text
