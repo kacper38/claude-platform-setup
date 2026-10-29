@@ -106,6 +106,61 @@ def test_hook_exit_2_with_schema_feedback(memstore, home):
     assert "add bad" in err  # committed anyway: the hook records, the warning asks for a fix
 
 
+def test_hook_commits_the_index_without_validating_it(memstore, home):
+    run(memstore, ["init"])
+    _, wt = store_paths(home)
+    path = os.path.join(wt, ALPHA, "memory", "MEMORY.md")
+    with open(path, "a", encoding="utf-8") as fh:
+        fh.write("- [a-one](a-one.md) — hook\n")
+    code, out, err = run(memstore, ["hook"], stdin=json.dumps({"tool_input": {"file_path": path}}))
+    assert code == 0 and "update MEMORY" in err and "memory schema" not in err
+
+
+def test_hook_ignores_copilot_payloads(memstore, home):
+    run(memstore, ["init"])
+    _, wt = store_paths(home)
+    path = os.path.join(wt, ALPHA, "memory", "bad.md")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("no frontmatter\n")
+    payload = json.dumps({"timestamp": "2026-10-29T10:00:00Z", "tool_input": {"file_path": path}})
+    assert run(memstore, ["hook"], stdin=payload) == (0, "", "")
+
+
+def test_hook_validates_even_when_the_commit_loses_a_lock(memstore, home, monkeypatch):
+    run(memstore, ["init"])
+    _, wt = store_paths(home)
+    path = os.path.join(wt, ALPHA, "memory", "bad.md")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("no frontmatter\n")
+    calls = {"n": 0}
+    real = memstore.Store.git
+
+    def locked(self, args, check=True):
+        if args[0] == "commit":
+            calls["n"] += 1
+            return subprocess.CompletedProcess(args, 128, "", "fatal: Unable to create 'index.lock': File exists.")
+        return real(self, args, check)
+
+    monkeypatch.setattr(memstore.Store, "git", locked)
+    monkeypatch.setattr(memstore.time, "sleep", lambda s: None)
+    code, _, err = run(memstore, ["hook"], stdin=json.dumps({"tool_input": {"file_path": path}}))
+    assert calls["n"] == 3 and "commit skipped" in err
+    assert code == 2 and "memory schema: bad.md: no frontmatter" in err
+
+
+def test_non_utf8_memory_file_is_a_warning_not_a_crash(memstore, home):
+    run(memstore, ["init"])
+    _, wt = store_paths(home)
+    path = os.path.join(wt, ALPHA, "memory", "bytes.md")
+    with open(path, "wb") as fh:
+        fh.write(b"---\nname: bytes\ndescription: d\xff\xfe\nmetadata:\n  type: user\n---\n\xff\n")
+    assert memstore.validate_file(path) == []
+    assert "bytes" in memstore.build_index(wt, ALPHA)
+    assert memstore.digest(memstore.Store(), "/Users/t/Developer/alpha")[0] == "Memory: 3 files for this project"
+    code, _, err = run(memstore, ["hook"], stdin=json.dumps({"tool_input": {"file_path": path}}))
+    assert code == 0 and "add bytes" in err
+
+
 @pytest.mark.parametrize("stdin", ["", "not json", json.dumps({"tool_input": {"file_path": "/tmp/x.py"}}),
                                    json.dumps({"tool_input": "weird"})])
 def test_hook_silent_on_irrelevant_input(memstore, home, stdin):
