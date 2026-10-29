@@ -1,5 +1,5 @@
 {
-  "_about": "Hooks run tools/guard (both harnesses). The permissions block is a Claude-Code-only belt duplicating a subset of the guard rules; Copilot ignores it.",
+  "_about": "Hooks run tools/guard (both harnesses). The permissions block is a Claude-Code-only belt duplicating a subset of the guard rules; Copilot ignores it. Hook commands resolve from $CLAUDE_PROJECT_DIR (Claude Code) or the cwd (Copilot), never from the shell's current directory.",
   "hooks": {
     "PreToolUse": [
       {
@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 tools/guard/guard.py hook pre --wrapper claude",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR:-.}\"/tools/guard/guard.py hook pre --wrapper claude",
             "timeout": 5,
             "statusMessage": "guard"
           }
@@ -20,7 +20,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 tools/memory/memstore.py hook",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR:-.}\"/tools/memory/memstore.py hook",
             "timeout": 10,
             "statusMessage": "memstore"
           }
@@ -32,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 tools/guard/guard.py hook fan-out --wrapper claude",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR:-.}\"/tools/guard/guard.py hook fan-out --wrapper claude",
             "timeout": 5,
             "statusMessage": "guard"
           }
@@ -44,13 +44,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 tools/tracker/session_start.py",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR:-.}\"/tools/tracker/session_start.py",
             "timeout": 5,
             "statusMessage": "tracker"
           },
           {
             "type": "command",
-            "command": "python3 tools/memory/memstore.py digest",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR:-.}\"/tools/memory/memstore.py digest",
             "timeout": 5,
             "statusMessage": "memstore"
           }
@@ -62,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 tools/telemetry/ledger.py hook",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR:-.}\"/tools/telemetry/ledger.py hook",
             "timeout": 20,
             "statusMessage": "ledger"
           }
