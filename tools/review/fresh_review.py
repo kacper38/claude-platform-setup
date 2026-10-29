@@ -64,6 +64,16 @@ def default_base(cwd: str) -> str:
     raise ReviewError("no origin/main or main to diff against; pass --base")
 
 
+def receipt_path(rdir: str, head: str) -> str:
+    """<sha>.json for the first review of a commit, <sha>.2.json, <sha>.3.json ... for re-runs."""
+    n = 1
+    while True:
+        cand = os.path.join(rdir, f"{head}.json" if n == 1 else f"{head}.{n}.json")
+        if not os.path.exists(cand):
+            return cand
+        n += 1
+
+
 def sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -81,8 +91,10 @@ def call_claude(prompt: str, model: str, claude_bin: str = "claude") -> dict:
         data = json.loads(r.stdout)
     except ValueError as exc:
         raise ReviewError(f"{claude_bin} returned no JSON: {r.stdout[:200]!r}") from exc
-    if data.get("is_error") or "structured_output" not in data:
-        raise ReviewError(f"{claude_bin} gave no structured verdict: {str(data.get('result'))[:300]}")
+    so = data.get("structured_output")
+    if data.get("is_error") or not isinstance(so, dict) or so.get("verdict") not in EXIT_BY_VERDICT \
+            or not isinstance(so.get("findings"), list):
+        raise ReviewError(f"{claude_bin} gave no usable structured verdict: {str(data.get('result'))[:300]}")
     return data
 
 
@@ -130,11 +142,11 @@ def main(argv: list, cwd: Optional[str] = None, out=None) -> int:
         rdir = os.path.join(git(["rev-parse", "--git-dir"], cwd).strip(), "fresh-review")
         rdir = rdir if os.path.isabs(rdir) else os.path.join(cwd, rdir)
         os.makedirs(rdir, exist_ok=True)
-        rpath = os.path.join(rdir, f"{head}.json")
-        with open(rpath, "w", encoding="utf-8") as fh:
+        rpath = receipt_path(rdir, head)
+        with open(rpath, "x", encoding="utf-8") as fh:  # append-only evidence: never overwrite an earlier receipt
             json.dump(receipt, fh, indent=2, sort_keys=True)
             fh.write("\n")
-    except ReviewError as exc:
+    except (ReviewError, OSError) as exc:
         out.write(f"fresh-review: error: {exc}\n")
         return 2
     cost = f"${receipt['cost_usd']:.2f}" if isinstance(receipt["cost_usd"], (int, float)) else "cost n/a"
