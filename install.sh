@@ -74,7 +74,8 @@ install_into() {
     local hp; hp="$(git -C "$target" config --get core.hooksPath 2>/dev/null || true)"
     local gitdir; gitdir="$(git -C "$target" rev-parse --git-path hooks)"
     [[ "$gitdir" == /* ]] || gitdir="$target/$gitdir"
-    local live=""; live="$(find "$gitdir" -maxdepth 1 -type f ! -name '*.sample' 2>/dev/null | xargs -n1 basename 2>/dev/null | tr '\n' ' ')"
+    local live="" f
+    for f in "$gitdir"/*; do [[ -f "$f" && "$f" != *.sample ]] && live+="$(basename "$f") "; done
     if [[ -z "$hp" && -n "$live" ]]; then
       echo "  left core.hooksPath unset: $target has live hooks in .git/hooks ($live); call tools/commit_msg.py from them to keep the gate"
     elif [[ -z "$hp" ]]; then
