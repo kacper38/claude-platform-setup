@@ -1,0 +1,41 @@
+# Task form: the definition of ready as fields. `tracker owner ready N` checks the same four things.
+name: Task
+description: A unit of work for an agent. Lands in status/backlog; a human promotes it with `tracker owner ready`.
+title: "task: "
+labels: ["type/todo", "status/backlog"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Write for the agent that will claim this: verifiable criteria, explicit scope limit, where it came from.
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: One checkbox per verifiable outcome. The owner ticks them before `tracker owner done`.
+      value: |
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is in. Files, components, environments.
+    validations:
+      required: true
+  - type: input
+    id: scope-limit
+    attributes:
+      label: Scope limit
+      description: What is explicitly out. Rendered as the `Scope limit:` line the tracker looks for.
+      placeholder: "Scope limit: no UI changes; no new dependencies"
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source
+      description: Plan step, conversation, incident, review comment that produced this task.
+    validations:
+      required: true
