@@ -92,3 +92,26 @@ def test_work_instructions_carry_the_same_prompt(review):
     body = instr.split("---", 2)[2].strip()
     assert body == prompt, "review.instructions.md must stay a copy of prompt.md (plus the applyTo frontmatter)"
     assert instr.startswith("---\napplyTo:")
+
+
+def test_rerun_never_overwrites_a_receipt(review, tmp_path):
+    r = repo_with_branch(tmp_path)
+    blocker = {"verdict": "BLOCKER", "summary": "s", "findings": []}
+    claude, _ = fake_claude(tmp_path, blocker)
+    assert review.main(["--base", "main", "--claude-bin", claude], cwd=str(r), out=io.StringIO()) == 1
+    claude, _ = fake_claude(tmp_path, {"verdict": "APPROVE", "summary": "", "findings": []})
+    assert review.main(["--base", "main", "--claude-bin", claude], cwd=str(r), out=io.StringIO()) == 0
+    receipts = sorted(p.name for p in (r / ".git" / "fresh-review").iterdir())
+    head = subprocess.run(["git", "-C", str(r), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    assert receipts == [f"{head}.2.json", f"{head}.json"]
+    assert json.loads((r / ".git" / "fresh-review" / f"{head}.json").read_text())["verdict"] == "BLOCKER"
+
+
+def test_malformed_model_answer_is_exit_2(review, tmp_path):
+    r = repo_with_branch(tmp_path)
+    for bad in (None, {"verdict": "MAYBE", "findings": []}, {"verdict": "APPROVE", "findings": "none"}):
+        claude, _ = fake_claude(tmp_path, bad)
+        out = io.StringIO()
+        assert review.main(["--base", "main", "--claude-bin", claude], cwd=str(r), out=out) == 2, bad
+        assert "no usable structured verdict" in out.getvalue()
+
