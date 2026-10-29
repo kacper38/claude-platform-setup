@@ -71,6 +71,28 @@ Anti-over-engineering (the lazy family):
 | `/ponytail-audit` | Same lens over the whole repo — ranked by removable lines/deps |
 | `/ponytail-debt` | Harvest `ponytail:` markers into a debt ledger with upgrade triggers |
 
+## Tracker — GitHub Issues as the system of record
+
+`tools/tracker/tracker.py` is the only writer of issues and labels an agent uses
+(the `tracker-guard` hook denies `gh issue …`, `gh label …` and raw API writes).
+State lives in two label families, `type/*` and `status/*`, with a transition
+table that says who may move what:
+
+```
+tracker new --title "…" --ac "…" --scope "…" --scope-limit "…" --source "…"   # agent: lands in status/backlog
+tracker owner ready N          # human at a terminal: definition of ready, freezes the body
+tracker claim N                # agent: ready -> in-progress, one per actor, records the branch
+tracker block N --question "…" # agent: in-progress -> blocked, question must name a path or field
+tracker review N --pr <url>    # agent: in-progress -> review; PR head = claimed branch, body has `Refs #N`
+tracker owner done N           # human: merged PR, green checks on the merge SHA, every box ticked or waived
+tracker list | show N | note N "…" | owner labels-sync
+```
+
+Owner verbs refuse without a TTY, so an agent cannot promote or close. The
+`label-lint` workflow reports label mistakes (comment + one tracking issue) and
+never edits them. Issue forms under `.github/ISSUE_TEMPLATE/` carry the
+definition-of-ready fields.
+
 ## Working agreement
 
 [`AGENTS.md`](AGENTS.md) — eight non-negotiables (plan first, small steps,

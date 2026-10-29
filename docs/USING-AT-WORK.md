@@ -46,7 +46,7 @@ Then adapt, in the work repo:
    docs/SYSTEM.md, a plan approved before code.
 6. **Walk test** in a fresh chat: "Quote non-negotiable 3 verbatim" must come
    back from `AGENTS.md`; "where does task state live" must name the tracker
-   or, until step 2.4, GitHub Issues by hand.
+   (`tools/tracker`, GitHub Issues with the `type/*` and `status/*` families).
 
 ## 2. What later plan steps add, and what to do with each at work
 
