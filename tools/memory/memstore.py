@@ -24,6 +24,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from typing import Optional
 
 EXCLUDE = "*\n!*/\n!*/memory/\n!*/memory/**\n"
@@ -99,7 +100,13 @@ class Store:
         name = os.path.splitext(os.path.basename(first[-1]))[0]
         n = len(status.splitlines())
         msg = f"memory({slug}): {action} {name}" + (f" (+{n - 1} more)" if n > 1 else "")
-        self.git(["commit", "-q", "-m", msg])
+        for attempt in range(3):  # parallel Write/Edit hooks race for index.lock
+            r = self.git(["commit", "-q", "-m", msg], check=False)
+            if r.returncode == 0:
+                break
+            if "index.lock" not in r.stderr or attempt == 2:
+                raise RuntimeError(f"git commit: {r.stderr.strip()[:300]}")
+            time.sleep(0.2 * (attempt + 1))
         out.write(f"memstore: committed {msg}\n")
         return 0
 
@@ -211,7 +218,7 @@ def validate_text(text: str, today: Optional[_dt.date] = None) -> list:
         if stale_date is None:
             out.append(f"metadata.stale_after is not a date: {stale!r}")
         elif stale_date < today and status == "active":
-            out.append(f"stale since {stale}: re-verify (set verified_on) or deprecate")
+            out.append(f"stale since {stale}: re-verify, then move stale_after (and set verified_on), or deprecate")
     if meta.get("verified") is True and _parse_date(meta.get("verified_on", "")) is None:
         out.append("verified: true needs metadata.verified_on: YYYY-MM-DD")
     return out
@@ -226,10 +233,15 @@ def _parse_date(value) -> Optional[_dt.date]:
         return None
 
 
+def read_text(path: str) -> str:
+    """Memory files are text; a stray byte must not take the hook or the session start down."""
+    with open(path, encoding="utf-8", errors="replace") as fh:
+        return fh.read()
+
+
 def validate_file(path: str, today: Optional[_dt.date] = None) -> list:
     try:
-        with open(path, encoding="utf-8") as fh:
-            return validate_text(fh.read(), today)
+        return validate_text(read_text(path), today)
     except OSError as exc:
         return [f"unreadable: {exc}"]
 
@@ -250,8 +262,10 @@ def memory_files(worktree: str, slug: str) -> list:
 def build_index(worktree: str, slug: str) -> str:
     rows = []
     for path in memory_files(worktree, slug):
-        with open(path, encoding="utf-8") as fh:
-            fm = parse_frontmatter(fh.read())
+        try:
+            fm = parse_frontmatter(read_text(path))
+        except OSError:
+            continue
         meta = fm.get("metadata") if isinstance(fm.get("metadata"), dict) else {}
         if meta.get("status", "active") != "active":
             continue
@@ -275,11 +289,16 @@ def build_index(worktree: str, slug: str) -> str:
 def triage_rows(worktree: str, slug: str, today: Optional[_dt.date] = None) -> list:
     rows = []
     for path in memory_files(worktree, slug):
-        with open(path, encoding="utf-8") as fh:
-            text = fh.read()
+        try:
+            text = read_text(path)
+        except OSError as exc:
+            text = ""
+            exc_note = f"unreadable: {exc}"
+        else:
+            exc_note = ""
         fm = parse_frontmatter(text)
         meta = fm.get("metadata") if isinstance(fm.get("metadata"), dict) else {}
-        warnings = validate_text(text, today)
+        warnings = [exc_note] if exc_note else validate_text(text, today)
         rows.append({
             "file": os.path.basename(path), "type": meta.get("type", "?"), "status": meta.get("status", "active"),
             "stale_after": meta.get("stale_after", ""), "verified_on": meta.get("verified_on", ""),
@@ -290,8 +309,7 @@ def triage_rows(worktree: str, slug: str, today: Optional[_dt.date] = None) -> l
 
 def set_metadata(path: str, **fields) -> None:
     """Insert or replace keys inside the `metadata:` block of a memory file's frontmatter."""
-    with open(path, encoding="utf-8") as fh:
-        text = fh.read()
+    text = read_text(path)
     end = text.find("\n---", 4) if text.startswith("---\n") else -1
     if end < 0:
         raise RuntimeError(f"{path}: no frontmatter")
@@ -346,6 +364,38 @@ def digest(store: Store, cwd: str, today: Optional[_dt.date] = None) -> list:
     return out
 
 
+def is_copilot(raw: dict) -> bool:
+    """Same tell the guard uses: Copilot payloads carry `timestamp` or camelCase keys, Claude Code's never do."""
+    return "timestamp" in raw or "toolName" in raw or "toolArgs" in raw
+
+
+def hook(store: Store, stdin, err) -> int:
+    """PostToolUse: commit the written memory file, then validate it. Exit 2 = schema feedback for the agent.
+    Claude Code only; Copilot payloads and paths outside the work tree return 0 silently."""
+    try:
+        raw = json.loads(stdin.read() or "{}")
+    except ValueError:
+        return 0
+    if not isinstance(raw, dict) or is_copilot(raw):
+        return 0
+    ti = raw.get("tool_input") if isinstance(raw.get("tool_input"), dict) else {}
+    path = ti.get("file_path") or ti.get("path") or ""
+    if not path or store.memory_rel(path) is None:
+        return 0
+    try:
+        store.commit(path, err)
+    except RuntimeError as exc:  # e.g. a lock held by a parallel hook: the next write catches up
+        err.write(f"memstore: commit skipped: {exc}\n")
+    full = os.path.expanduser(path)
+    if os.path.basename(full) == "MEMORY.md" or not os.path.exists(full):  # the index has no frontmatter by design
+        return 0
+    warnings = validate_file(full)
+    if warnings:
+        err.write("memory schema: " + os.path.basename(path) + ": " + "; ".join(warnings) + "\n")
+        return 2
+    return 0
+
+
 # ----------------------------------------------------------------------------
 # CLI
 # ----------------------------------------------------------------------------
@@ -394,20 +444,7 @@ def main(argv: list, out=None, err=None, stdin=None) -> int:
         if ns.verb == "log":
             return store.log(ns.n, out)
         if ns.verb == "hook":
-            try:
-                raw = json.loads(stdin.read() or "{}")
-            except ValueError:
-                return 0
-            ti = raw.get("tool_input") if isinstance(raw.get("tool_input"), dict) else {}
-            path = ti.get("file_path") or ti.get("path") or ""
-            if not path or store.memory_rel(path) is None:
-                return 0
-            store.commit(path, err)
-            warnings = validate_file(os.path.expanduser(path)) if os.path.exists(os.path.expanduser(path)) else []
-            if warnings:
-                err.write("memory schema: " + os.path.basename(path) + ": " + "; ".join(warnings) + "\n")
-                return 2
-            return 0
+            return hook(store, stdin, err)
         if ns.verb == "digest":
             for ln in digest(store, ns.cwd):
                 out.write(ln + "\n")
