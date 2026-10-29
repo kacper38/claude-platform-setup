@@ -2,5 +2,6 @@
   "_about": "Per-repo knobs for tools/guard/guard.py. Env KZ_* overrides. Committed on purpose: the policy is reviewable.",
   "telemetry_dir": "~/.claude/telemetry",
   "protected_branches": ["main"],
-  "boundary": "own"
+  "boundary": "own",
+  "scratch_md_mode": "ask"
 }
