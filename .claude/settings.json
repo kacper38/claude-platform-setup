@@ -1,4 +1,5 @@
 {
+  "_about": "Hooks run tools/guard (both harnesses). The permissions block is a Claude-Code-only belt duplicating a subset of the guard rules; Copilot ignores it.",
   "hooks": {
     "PreToolUse": [
       {
@@ -12,6 +13,49 @@
           }
         ]
       }
+    ]
+  },
+  "permissions": {
+    "deny": [
+      "Write(**/.env)",
+      "Write(**/.env.local)",
+      "Write(**/.env.production)",
+      "Write(**/.env.development)",
+      "Write(**/.env.staging)",
+      "Write(**/.env.test)",
+      "Edit(**/.env)",
+      "Edit(**/.env.local)",
+      "Edit(**/.env.production)",
+      "Edit(**/.env.development)",
+      "Edit(**/.env.staging)",
+      "Edit(**/.env.test)",
+      "Write(**/*.pem)",
+      "Write(**/*.key)",
+      "Write(**/*.tfstate)",
+      "Write(**/*.tfstate.backup)",
+      "Edit(**/*.pem)",
+      "Edit(**/*.key)",
+      "Edit(**/*.tfstate)",
+      "Edit(**/*.tfstate.backup)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Bash(git push --force-with-lease*)",
+      "Bash(git commit --no-verify*)",
+      "Bash(git commit -n *)",
+      "Bash(git push --no-verify*)"
+    ],
+    "ask": [
+      "Write(**/*.tfvars)",
+      "Edit(**/*.tfvars)",
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.production)",
+      "Read(**/*.tfstate)",
+      "Read(~/.aws/credentials)",
+      "Read(~/.kube/config)",
+      "Read(~/.ssh/id_*)"
     ]
   }
 }

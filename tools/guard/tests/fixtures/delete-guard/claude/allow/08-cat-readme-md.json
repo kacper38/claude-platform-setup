@@ -1,7 +1,10 @@
 {
   "_fixture": {
-    "command": "cat README.md",
+    "case": {
+      "command": "cat README.md"
+    },
     "harness": "claude",
+    "rule": "delete-guard",
     "source": "captured 2026-10-29 from a Claude Code probe session (haiku, claude -p), redacted and path-normalized"
   },
   "cwd": "/work/repo",

@@ -1,4 +1,6 @@
 {
-  "_about": "Per-repo knobs for tools/guard/guard.py (plan step 1.2). Env KZ_* overrides. Committed on purpose: the policy is reviewable.",
-  "telemetry_dir": "~/.claude/telemetry"
+  "_about": "Per-repo knobs for tools/guard/guard.py. Env KZ_* overrides. Committed on purpose: the policy is reviewable.",
+  "telemetry_dir": "~/.claude/telemetry",
+  "protected_branches": ["main"],
+  "boundary": "own"
 }

@@ -78,7 +78,7 @@ def test_capture_writes_redacted_file(guard_path, tmp_path, monkeypatch):
     assert "ghp_" not in text and "<redacted>" in text
 
 
-def test_help_version_rules(guard_path):
-    assert run(guard_path, ["version"], "").stdout.strip() == b"0.1.0"
+def test_help_version_rules(guard, guard_path):
+    assert run(guard_path, ["version"], "").stdout.strip().decode() == guard.VERSION
     assert b"delete-guard" in run(guard_path, ["rules"], "").stdout
     assert b"Usage" in run(guard_path, ["help"], "").stdout

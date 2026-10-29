@@ -1,7 +1,10 @@
 {
   "_fixture": {
-    "command": "psql -c \"DELETE FROM users WHERE id = 1\"",
+    "case": {
+      "command": "psql -c \"DELETE FROM users WHERE id = 1\""
+    },
     "harness": "claude",
+    "rule": "delete-guard",
     "source": "captured 2026-10-29 from a Claude Code probe session (haiku, claude -p), redacted and path-normalized"
   },
   "cwd": "/work/repo",
