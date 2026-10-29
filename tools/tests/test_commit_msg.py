@@ -19,7 +19,9 @@ OK = [
     "Merge branch 'step-1.5' into main",
     "Revert \"feat: x\"\n\nThis reverts commit abc.",
     "fixup! feat: x",
+    "amend! feat: x",
     "feat: add CI matrix for 3.9 and 3.13",
+    "feat: add x\n\n# a template comment saying fixes #12 is stripped by git\n",
 ]
 BAD = [
     ("fixes #12", "subject must be"),
@@ -35,6 +37,8 @@ BAD = [
     ("feat: add x\n\ncloses kacper38/repo#3", "closing keyword"),
     ("feat: add x\n\nsome prose\nCo-Authored-By: A <a@b>", "trailer block mixes"),
     ("", "empty"),
+    ("Merge stuff together", "subject must be"),
+    ("Revert the thing", "subject must be"),
 ]
 
 
