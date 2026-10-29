@@ -154,6 +154,28 @@ CASES: dict = {
         ("allow", "spawn", {"agent": "Explore"}),
         *shell("allow", "ls -la"),
     ],
+    "guard-config": [
+        ("ask", "edit", {"path": ".claude/settings.json"}),
+        ("ask", "write", {"path": ".claude/settings.local.json", "content": "{}"}),
+        ("ask", "edit", {"path": ".claude/guard.json"}),
+        ("ask", "edit", {"path": ".github/hooks/guard.json"}),
+        ("ask", "write", {"path": ".github/hooks/lint.json", "content": "{}"}),
+        ("ask", "edit", {"path": "tools/guard/guard.py"}),
+        ("ask", "write", {"path": "tools/guard/tests/make_fixtures.py", "content": "x"}),
+        ("ask", "edit", {"path": "~/.claude/settings.json"}),
+        ("ask", "edit", {"path": "~/.claude/settings.local.json"}),
+        ("ask", "edit", {"path": "~/.claude/hooks/ask-on-delete.sh"}),
+        ("ask", "edit", {"path": "sub/project/.claude/guard.json"}),
+        ("allow", "edit", {"path": "README.md"}),
+        ("allow", "write", {"path": ".claude/agents/x.md", "content": "x"}),
+        ("allow", "write", {"path": ".claude/skills/x/SKILL.md", "content": "x"}),
+        ("allow", "edit", {"path": ".github/workflows/ci.yml"}),
+        ("allow", "edit", {"path": "tools/tracker/cli.py"}),
+        ("allow", "edit", {"path": "~/.claude/agents/x.md"}),
+        ("allow", "edit", {"path": "~/.claude/CLAUDE.md"}),
+        ("allow", "edit", {"path": "docs/settings.json"}),
+        ("allow", "read", {"path": ".claude/settings.json"}),
+    ],
 }
 
 ENVELOPES = {

@@ -776,6 +776,48 @@ def rule_fan_out(ev: Event, cfg: dict) -> Optional[Decision]:
 
 
 # ----------------------------------------------------------------------------
+# guard-config: changing the guard or its wiring needs a human yes (plan step 2.1)
+# ----------------------------------------------------------------------------
+
+_SETTINGS_RE = re.compile(r"^settings(\..+)?\.json$")
+GUARD_CONFIG_MSG = (
+    "Guard-the-guard: {path} is {what}; it polices this very session, so a human confirms every change "
+    "(and AGENTS.md rule 4 wants the why in DECISIONS.md)."
+)
+
+
+def guard_config_class(path: Optional[str]) -> Optional[str]:
+    """What kind of hook configuration a path is, or None for an ordinary file."""
+    if not path:
+        return None
+    home_claude = os.path.join(os.path.expanduser("~"), ".claude")
+    if path.startswith(home_claude + os.sep):
+        rest = path[len(home_claude) + 1 :].split(os.sep)
+        if rest[0] == "hooks" or (len(rest) == 1 and _SETTINGS_RE.match(rest[0])):
+            return "user-scope hook configuration"
+    parts = path.split(os.sep)
+    for i, part in enumerate(parts[:-1]):
+        nxt = parts[i + 1]
+        last = i + 1 == len(parts) - 1
+        if part == ".claude" and last and (_SETTINGS_RE.match(nxt) or nxt == "guard.json"):
+            return "the repo's hook configuration"
+        if part == ".github" and nxt == "hooks":
+            return "the repo's Copilot hook configuration"
+        if part == "tools" and nxt == "guard":
+            return "the guard itself"
+    return None
+
+
+def rule_guard_config(ev: Event, cfg: dict) -> Optional[Decision]:
+    if ev.event != "PreToolUse" or ev.kind not in ("write", "edit"):
+        return None
+    what = guard_config_class(ev.abspath())
+    if what is None:
+        return None
+    return "ask", GUARD_CONFIG_MSG.format(path=ev.path, what=what)
+
+
+# ----------------------------------------------------------------------------
 # Registry
 # ----------------------------------------------------------------------------
 
@@ -791,6 +833,7 @@ RULES: dict[str, Rule] = {
     "scratch-md": rule_scratch_md,
     "protected-branch": rule_protected_branch,
     "fan-out": rule_fan_out,
+    "guard-config": rule_guard_config,
 }
 PRE_RULES = list(RULES)
 
