@@ -1,0 +1,44 @@
+# Bug form: same definition of ready as a task, plus the observed/expected pair.
+name: Bug
+description: Something is wrong. Lands in status/backlog; a human promotes it with `tracker owner ready`.
+title: "bug: "
+labels: ["type/bug", "status/backlog"]
+body:
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed
+      description: What happened, with the exact command and output.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: One checkbox per verifiable outcome; the first is usually "a failing test reproduces it".
+      value: |
+        - [ ] a failing test reproduces the bug
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Where the fix may touch.
+    validations:
+      required: true
+  - type: input
+    id: scope-limit
+    attributes:
+      label: Scope limit
+      placeholder: "Scope limit: no refactor of adjacent code"
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source
+      description: Where this was seen (session, CI run, user report).
+    validations:
+      required: true
