@@ -18,6 +18,9 @@ managed tools/review/fresh_review.py
 managed tools/review/prompt.md
 managed bin/fresh-review
 managed .github/instructions/review.instructions.md
+managed tools/memory/memstore.py
+managed tools/telemetry/ledger.py
+managed tools/telemetry/prices.json
 managed .github/workflows/label-lint.yml
 init    .github/ISSUE_TEMPLATE/task.yml
 init    .github/ISSUE_TEMPLATE/bug.yml
