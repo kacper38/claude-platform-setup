@@ -8,5 +8,11 @@ init    .claude/settings.json
 init    .claude/guard.json
 managed .github/hooks/guard.json
 managed tools/guard/guard.py
+managed tools/tracker/tracker.py
+managed tools/tracker/label_lint.py
+managed .github/workflows/label-lint.yml
+init    .github/ISSUE_TEMPLATE/task.yml
+init    .github/ISSUE_TEMPLATE/bug.yml
+init    .github/ISSUE_TEMPLATE/config.yml
 map     agents  .claude/agents
 map     skills  .claude/skills
