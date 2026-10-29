@@ -131,6 +131,8 @@ def build_entry(raw: dict, tdir: str, prices: dict, now: Optional[_dt.datetime] 
     merge(combined, main_usage)
     merge(combined, sub_usage)
     for model, u in combined.items():
+        if total_tokens({model: u}) == 0:  # "<synthetic>" rows and empty turns carry no usage
+            continue
         models[model] = {**u, "cost_usd": usage_cost(u, price_for(model, prices))}
     main_t, sub_t = total_tokens(main_usage), total_tokens(sub_usage)
     share = round(sub_t / (main_t + sub_t), 3) if (main_t + sub_t) else 0.0

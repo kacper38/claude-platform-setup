@@ -25,6 +25,7 @@ def write_transcript(tmp_path, session="s1", subagents=1):
         json.dumps({"type": "user", "message": {"role": "user"}}),
         "not json at all",
         line("claude-fable-5-1", 10, 5, req="r2"),
+        line("<synthetic>", 0, 0, req="r3"),  # Claude Code writes these for aborted turns: no usage, no row
     ]) + "\n", encoding="utf-8")
     sub = proj / session / "subagents"
     sub.mkdir(parents=True)
@@ -37,8 +38,9 @@ def test_parse_transcript_dedups_and_counts_errors(ledger, tmp_path):
     main = write_transcript(tmp_path)
     usage, errors = ledger.parse_transcript(str(main))
     assert errors == 1
-    assert usage == {"claude-fable-5-1": {"input": 110, "output": 55, "cache_read": 1000, "cache_write": 200,
-                                          "turns": 2}}
+    assert usage["claude-fable-5-1"] == {"input": 110, "output": 55, "cache_read": 1000, "cache_write": 200,
+                                         "turns": 2}
+    assert usage["<synthetic>"]["turns"] == 1
 
 
 def test_price_lookup_by_longest_prefix(ledger):
@@ -61,6 +63,7 @@ def test_build_entry_joins_subagents_spawns_and_prices(ledger, tmp_path, tdir):
     e = ledger.build_entry(raw, str(tdir), PRICES, now=dt.datetime(2026, 10, 29, 12, 0, tzinfo=dt.timezone.utc))
     assert e["ts"] == "2026-10-29T12:00:00Z" and e["project"] == "/Users/t/x" and e["parse_errors"] == 1
     assert e["models"]["claude-fable-5-1"]["cost_usd"] is None
+    assert "<synthetic>" not in e["models"]
     opus = e["models"]["claude-opus-4-5"]
     assert opus["input"] == 2000 and opus["turns"] == 2
     assert opus["cost_usd"] == round((2000 * 5 + 4000 * 25 + 6000 * 0.5 + 800 * 6.25) / 1e6, 6)
