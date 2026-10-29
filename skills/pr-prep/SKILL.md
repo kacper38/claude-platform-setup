@@ -41,5 +41,5 @@ When the user runs `/pr-prep`:
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
-4. **Check docs**: check project docs (CLAUDE.md/README) for sections needing updates, if present
+4. **Check docs**: check project docs (AGENTS.md/README) for sections needing updates, if present
 5. **Output**: Ready-to-use PR body for `gh pr create`

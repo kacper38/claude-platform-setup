@@ -51,7 +51,7 @@ Execution bench:
 
 | Skill | When |
 |---|---|
-| `/task-intake` | New task/ticket → assumptions, questions, scaffolding (README, DECISIONS.md, CLAUDE.md), approved plan |
+| `/task-intake` | New task/ticket → assumptions, questions, scaffolding (README, DECISIONS.md, AGENTS.md), approved plan |
 | `/platform-flow` | The chain: local dev → Docker → CI → Terraform → CD → observability → security |
 | `/rag-stack` | RAG component: pgvector, traceability-first schema, idempotent ingestion, private endpoints, eval + cost hooks |
 | `/data-pipeline` | Data feed/ETL: source contract + quarantine, idempotent load, lineage row per run, quality gates, scheduled job |
@@ -73,19 +73,38 @@ Anti-over-engineering (the lazy family):
 
 ## Working agreement
 
-[`CLAUDE.md`](CLAUDE.md) — eight non-negotiables (plan first, small steps,
+[`AGENTS.md`](AGENTS.md) — eight non-negotiables (plan first, small steps,
 evidence over claims, DECISIONS.md, regulated context, security reflexes,
-named gaps, back out of bad paths) plus the four Karpathy coding principles
+named gaps, back out of bad paths), the four Karpathy coding principles
 (think before coding, simplicity first, surgical changes, goal-driven
 execution — adapted from
-[andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills)).
-`/task-intake` copies it into the task repo, so the principles are always
-active where you work.
+[andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills)),
+the model-routing table and notes on which harness reads what. `CLAUDE.md`
+is the one line `@AGENTS.md`, so Claude Code loads the same file that GitHub
+Copilot, Codex and Gemini CLI read directly. `/task-intake` copies both into
+the task repo, so the principles are always active where you work.
+
+Decisions live in [`DECISIONS.md`](DECISIONS.md); the one-page system
+description in [`docs/SYSTEM.md`](docs/SYSTEM.md); the current plan in
+[`docs/PLAN-2026-10-mature-setup.md`](docs/PLAN-2026-10-mature-setup.md).
 
 A one-page visual overview lives in
 [`setup-overview.html`](setup-overview.html) (Polish). A non-normative study
 guide for the target role's tech stack (with a personal CV gap map) lives in
 [`tech-primer.html`](tech-primer.html) — the `.md` files are the authority.
+
+## Install into a repo (the kit)
+
+The setup is becoming a repo-level kit that Claude Code **and** VS Code +
+GitHub Copilot read from the same files: `AGENTS.md`, `.claude/settings.json`
+(hooks), `.claude/skills/`, `.claude/agents/`, `.github/hooks/`,
+`tools/guard`, `tools/tracker`. `install.sh --into <repo>` arrives with step
+1.2 of the plan. Until then, copy by hand:
+
+```bash
+cp AGENTS.md <repo>/AGENTS.md && printf '@AGENTS.md\n' > <repo>/CLAUDE.md
+mkdir -p <repo>/.claude && cp -R skills <repo>/.claude/skills && cp -R agents <repo>/.claude/agents
+```
 
 ## License
 

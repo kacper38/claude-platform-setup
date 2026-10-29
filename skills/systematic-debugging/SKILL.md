@@ -177,7 +177,7 @@ You MUST complete each phase before proceeding to the next.
    - One-off test script if no framework
    - MUST have before fixing
    - Write the failing test first, then make it pass (goal-driven execution,
-     CLAUDE.md coding principle 4)
+     AGENTS.md coding principle 4)
 
 2. **Implement Single Fix**
    - Address the root cause identified

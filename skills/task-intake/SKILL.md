@@ -18,7 +18,7 @@ and a scaffolded workspace. Nothing gets built before this completes.
 3. **Scaffold** (in the task repo, where not already present):
    - `README.md` — goal, scope, explicit "not doing X because Y" section
    - `DECISIONS.md` — decision log with format: `- <decision> — <why>; revisit if: <trigger>`
-   - `CLAUDE.md` — copy this setup's working agreement, append the task's assumptions
+   - `AGENTS.md` — copy this setup's working agreement, append the task's assumptions; `CLAUDE.md` = the one line `@AGENTS.md` (Claude Code imports it, Copilot reads `AGENTS.md` directly)
    - `docs/SYSTEM.md` — one-page system description: purpose, components +
      data flows, environments, interfaces, data classification. Auditors read
      this first; a GAMP 5 CSV package expects it. Skeleton now, kept current

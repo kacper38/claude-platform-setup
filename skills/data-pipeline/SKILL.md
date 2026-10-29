@@ -46,7 +46,7 @@ records its runs beats an idle Airflow.
 ## Non-negotiables
 
 - Every new connection is a data boundary — client data stays inside the
-  agreed one (CLAUDE.md rule 6); record the connection in DECISIONS.md.
+  agreed one (AGENTS.md rule 6); record the connection in DECISIONS.md.
 - Pin everything: source schema version, image tag, transform code SHA.
 - No hard deletes of regulated data — soft delete + audit table
   (postgres-engineer owns the pattern).
