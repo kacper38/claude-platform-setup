@@ -1,6 +1,7 @@
 ---
 name: node-engineer
 description: Use this agent to write or review production TypeScript/Node for platform work — Next.js frontends, API routes, and debugging Node apps in CI or containers. Triggers: "write/fix the frontend", Next.js build or deploy issues, TypeScript errors in CI, package.json/lockfile questions, Node code review.
+model: opus
 tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 

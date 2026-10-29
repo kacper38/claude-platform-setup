@@ -1,6 +1,6 @@
 # System description — claude-platform-setup
 
-Status: 2026-10-29, after step 1.5 of `docs/PLAN-2026-10-mature-setup.md`.
+Status: 2026-10-29, after step 1.6 of `docs/PLAN-2026-10-mature-setup.md`.
 Components marked *planned* do not exist yet; the plan step that creates them is named.
 
 ## Purpose
@@ -17,7 +17,7 @@ external verification with shown output, decisions recorded.
 | Component | Today | Read by | Data |
 |---|---|---|---|
 | `AGENTS.md` (+ `CLAUDE.md` = `@AGENTS.md`) | exists | Claude Code; Copilot (VS Code, CLI, cloud); Codex; Gemini CLI | rules only |
-| `agents/*.md` | exists (12) | Claude Code via `~/.claude/agents` (`install.sh`); VS Code reads `.claude/agents` in task repos | prompts |
+| `agents/*.md` | exists (12, each pins `model:` opus/fable) | Claude Code via `~/.claude/agents` (`install.sh`); VS Code reads `.claude/agents` in task repos | prompts |
 | `skills/*/SKILL.md` | exists | Claude Code via `~/.claude/skills`; Copilot via `.claude/skills` in task repos | procedures |
 | `kit.manifest` + `install.sh --into <repo>` | exists (1.2) | — | copies the listed files into a task repo; writes `.claude/kit-version` and a hash manifest so locally edited files are kept |
 | `tools/guard/guard.py` + `.claude/settings.json` + `.github/hooks/guard.json` | exists (1.2 engine + delete-guard; 1.4 secret-write/read/shell, git-guard, deploy-ask, egress-guard; 1.5 scratch-md); more rules planned (2.1–2.3) | Claude Code hooks; Copilot hooks | hook JSON on stdin → `ask`/`deny` JSON (never `allow`); fixtures from both harnesses; no network |

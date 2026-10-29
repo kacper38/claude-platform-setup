@@ -1,6 +1,7 @@
 ---
 name: python-engineer
 description: Use this agent to write or review production Python for platform work — FastAPI services, CLI tools, automation scripts, glue code, and debugging Python services. Triggers: "write a script/endpoint/tool in Python", Python code review, packaging/deps questions (uv, pyproject), async or typing issues, "debug this service".
+model: opus
 tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 

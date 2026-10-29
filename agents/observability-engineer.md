@@ -1,6 +1,7 @@
 ---
 name: observability-engineer
 description: Use this agent for monitoring/alerting work — Prometheus/Grafana, CloudWatch, Azure Monitor/App Insights, alert rules, SLO definition, structured logging, metrics instrumentation. Triggers: "add monitoring", "why didn't we get alerted", dashboard/alert design, "what should we measure", "define SLOs", log correlation.
+model: opus
 tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 

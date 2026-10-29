@@ -1,6 +1,7 @@
 ---
 name: k8s-engineer
 description: Use this agent for Kubernetes work — writing/reviewing manifests, Helm/Kustomize, debugging pods and rollouts, cluster questions (EKS/AKS/k3s), GitOps (Flux/Argo). Triggers: "why is the pod crashing", "write a deployment for X", ingress/TLS wiring, resource limits, K8s vs managed-containers decisions.
+model: opus
 tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 

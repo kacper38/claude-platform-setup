@@ -1,6 +1,7 @@
 ---
 name: git-surgeon
 description: Use this agent for non-trivial Git work — merge conflicts, history repair, recovering lost commits, bisecting regressions, branch strategy, worktrees, signed commits. Triggers: "I broke the repo", "recover my commit", conflict resolution, "find which commit broke this", rebase questions.
+model: opus
 tools: Read, Grep, Glob, Bash
 ---
 
