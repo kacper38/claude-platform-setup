@@ -1,0 +1,3 @@
+#!/bin/sh
+# Fresh-context review of the branch diff with a receipt. See tools/review/fresh_review.py.
+exec python3 "$(cd "$(dirname "$0")/.." && pwd)/tools/review/fresh_review.py" "$@"
