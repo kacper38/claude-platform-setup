@@ -93,6 +93,18 @@ Owner verbs refuse without a TTY, so an agent cannot promote or close. The
 never edits them. Issue forms under `.github/ISSUE_TEMPLATE/` carry the
 definition-of-ready fields.
 
+## Review and egress
+
+- `bin/fresh-review` sends `origin/main...HEAD` (through the egress screen) to a
+  fresh Opus context with `tools/review/prompt.md` and writes a receipt to
+  `.git/fresh-review/<sha>.json`; `/pr-prep` pastes the verdict. At work the
+  same prompt is `.github/instructions/review.instructions.md` for Copilot code review.
+- `tools/egress/egress_screen.py --target <name> [--pass] [files]` is the last
+  check before anything leaves the machine: secrets, gitleaks, client markers,
+  size, and the client boundary. Held items are listed, counted and never dropped (exit 3).
+- `.githooks/commit-msg` (`core.hooksPath`, set by the installer) enforces
+  `type(scope): imperative subject`, no closing keywords; CI re-checks the PR range.
+
 ## Working agreement
 
 [`AGENTS.md`](AGENTS.md) — eight non-negotiables (plan first, small steps,

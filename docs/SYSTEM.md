@@ -1,6 +1,6 @@
 # System description — claude-platform-setup
 
-Status: 2026-10-29, after step 2.8 (ruleset; dogfood issues pending the owner's labels-sync) of `docs/PLAN-2026-10-mature-setup.md`.
+Status: 2026-10-29, after step 3.3 (2.8 dogfood issues pending the owner's labels-sync) of `docs/PLAN-2026-10-mature-setup.md`.
 Components marked *planned* do not exist yet; the plan step that creates them is named.
 
 ## Purpose
@@ -23,7 +23,9 @@ external verification with shown output, decisions recorded.
 | `tools/guard/guard.py` + `.claude/settings.json` + `.github/hooks/guard.json` | exists (1.2 engine + delete-guard; 1.4 secret-write/read/shell, git-guard, deploy-ask, egress-guard; 1.5 scratch-md; 2.1 guard-the-guard; 2.2 protected-branch; 2.3 fan-out + spawn log; 2.6 tracker-guard) | Claude Code hooks; Copilot hooks | hook JSON on stdin → `ask`/`deny` JSON (never `allow`); fixtures from both harnesses; no network |
 | `tools/tracker/tracker.py` + label families + issue forms | exists (2.4, 2.5, 2.7: pr-prep and task-intake call it; session-start digest) | agents via the verbs, humans via `owner` verbs at a terminal; GitHub via `gh` | issues, labels, marker comments on GitHub |
 | `tools/tracker/label_lint.py` + `.github/workflows/label-lint.yml` | exists (2.4) | GitHub Actions on issue events and nightly | comments and one tracking issue; never edits labels |
-| `.githooks/commit-msg`, fresh review, egress screen | planned (3.1–3.3) | git; `claude -p` at home; Copilot code review at work | diffs, screened before they leave the machine |
+| `.githooks/commit-msg` + `tools/commit_msg.py` | exists (3.1) | git via `core.hooksPath`; CI job `commit-msg` on the PR range | commit messages |
+| `tools/egress/egress_screen.py` | exists (3.2) | `fresh-review`, `gemini-review`, anything that sends material out | the material, held or sent, never dropped |
+| `bin/fresh-review` + `tools/review/prompt.md` (= `.github/instructions/review.instructions.md`) | exists (3.3) | `claude -p` at home (Opus, no tools, JSON schema); Copilot code review at work | branch diff; receipt `.git/fresh-review/<sha>.json` |
 | memory store, session ledger | planned (3.4–3.6) | Claude Code only | memory files (private repo); token usage (local) |
 | `~/.claude/telemetry/spawns.jsonl` | exists (2.3) | fan-out rule; humans (`tail`) | one line per subagent spawn: ts, harness, agent, model; local only |
 
