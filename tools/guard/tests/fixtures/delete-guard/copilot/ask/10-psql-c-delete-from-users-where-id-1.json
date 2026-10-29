@@ -1,8 +1,11 @@
 {
   "_fixture": {
-    "command": "psql -c \"DELETE FROM users WHERE id = 1\"",
+    "case": {
+      "command": "psql -c \"DELETE FROM users WHERE id = 1\""
+    },
     "format": "vscode",
     "harness": "copilot",
+    "rule": "delete-guard",
     "source": "synthesized 2026-10-29 from the GitHub hooks reference and VS Code hooks docs; replace with a capture from VS Code + Copilot (plan step 1.3 on the work machine)"
   },
   "cwd": "/work/repo",
