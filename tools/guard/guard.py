@@ -26,7 +26,7 @@ import subprocess
 import sys
 from typing import Callable, Optional
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 
 # ----------------------------------------------------------------------------
 # Harness normalization
@@ -818,6 +818,89 @@ def rule_guard_config(ev: Event, cfg: dict) -> Optional[Decision]:
 
 
 # ----------------------------------------------------------------------------
+# tracker-guard: issues and labels change only through the tracker verbs (plan step 2.6)
+# ----------------------------------------------------------------------------
+
+_GH_ISSUE_REPLACEMENT = {
+    "create": "`tracker new --title ... --ac ... --scope ... --scope-limit ... --source ...`",
+    "edit": "`tracker claim|block|review` for status labels; bodies are frozen after ready",
+    "comment": "`tracker note N \"text\"`",
+    "close": "`tracker owner done N` (a human runs it)",
+    "reopen": "`tracker owner ready N` (a human runs it)",
+    "delete": "nothing: issues are never deleted",
+    "transfer": "nothing: ask the owner",
+    "pin": "nothing: ask the owner",
+    "unpin": "nothing: ask the owner",
+    "lock": "nothing: ask the owner",
+    "unlock": "nothing: ask the owner",
+    "develop": "`tracker claim N --branch <branch>`",
+}
+_TEMP_ALLOWED_LABELS = {"agent-loop", "handoff"}  # until step 3.8 moves ArtEventOS onto the tracker
+_GH_API_MUTATING_FLAGS = {"-f", "-F", "--field", "--raw-field", "--input"}
+_GH_API_VALUE_FLAGS = _GH_API_MUTATING_FLAGS | {"-X", "--method", "-H", "--header", "-q", "--jq", "-t", "--template",
+                                                "--hostname", "-p", "--preview", "--cache"}
+_CURL_MUTATING_FLAGS = {"-d", "--data", "--data-raw", "--data-binary", "--data-urlencode", "--json", "-T",
+                        "--upload-file", "--post-data", "--post-file"}
+_ISSUE_API_RE = re.compile(r"(^|/)repos/[^/\s]+/[^/\s]+/(issues|labels)(/|$|\?)")
+TRACKER_MSG = "tracker-guard: {what}. Use {use}; the tracker is the only writer of issues and labels."
+
+
+def _flag_value(seg: list[str], names: set) -> Optional[str]:
+    for i, t in enumerate(seg):
+        if t in names and i + 1 < len(seg):
+            return seg[i + 1]
+        for n in names:
+            if t.startswith(n + "="):
+                return t[len(n) + 1 :]
+    return None
+
+
+def rule_tracker_guard(ev: Event, cfg: dict) -> Optional[Decision]:
+    if ev.event != "PreToolUse" or ev.kind != "shell" or not ev.command:
+        return None
+    for seg in segments(strip_heredocs(ev.command)):
+        head = os.path.basename(seg[0])
+        if head == "gh" and len(seg) >= 3 and seg[1] == "issue" and seg[2] in _GH_ISSUE_REPLACEMENT:
+            label = _flag_value(seg, {"--label", "-l"})
+            if seg[2] == "create" and label and set(label.split(",")) <= _TEMP_ALLOWED_LABELS:
+                continue
+            return "deny", TRACKER_MSG.format(what=f"`gh issue {seg[2]}` bypasses the tracker",
+                                              use=_GH_ISSUE_REPLACEMENT[seg[2]])
+        if head == "gh" and len(seg) >= 3 and seg[1] == "label" and seg[2] in ("create", "edit", "delete", "clone"):
+            return "deny", TRACKER_MSG.format(what=f"`gh label {seg[2]}` bypasses the tracker",
+                                              use="`tracker owner labels-sync` (a human runs it)")
+        if head == "gh" and len(seg) >= 3 and seg[1] == "api":
+            path, skip = "", False
+            for t in seg[2:]:
+                if skip:
+                    skip = False
+                elif t in _GH_API_VALUE_FLAGS:
+                    skip = True
+                elif not t.startswith("-"):
+                    path = t
+                    break
+            method = (_flag_value(seg, {"-X", "--method"}) or "GET").upper()
+            mutating = method != "GET" or any(t in _GH_API_MUTATING_FLAGS for t in seg)
+            if _ISSUE_API_RE.search(path) and mutating:
+                return "deny", TRACKER_MSG.format(what=f"`gh api {method} {path}` writes issues or labels",
+                                                  use="the tracker verbs")
+        if head in ("curl", "wget", "http", "https", "xh"):
+            url = next((t for t in seg[1:] if "api.github.com/repos/" in t), "")
+            if url and _ISSUE_API_RE.search(url):
+                method = (_flag_value(seg, {"-X", "--request", "--method"}) or "").upper()
+                verbs = {"POST", "PATCH", "PUT", "DELETE"}
+                mutating = (method in verbs or any(t in _CURL_MUTATING_FLAGS for t in seg)
+                            or (head != "curl" and head != "wget" and any(t.upper() in verbs for t in seg[1:])))
+                if mutating:
+                    return "deny", TRACKER_MSG.format(what=f"`{head}` writes to {url}", use="the tracker verbs")
+        words = seg[1:] if head in ("python", "python3") else seg
+        if words and os.path.basename(words[0]) in ("tracker", "tracker.py") and "owner" in words[1:2]:
+            use = "`tracker new|claim|block|review|note`; ask the owner to promote or close"
+            return "deny", TRACKER_MSG.format(what="`tracker owner` is the human's verb", use=use)
+    return None
+
+
+# ----------------------------------------------------------------------------
 # Registry
 # ----------------------------------------------------------------------------
 
@@ -834,6 +917,7 @@ RULES: dict[str, Rule] = {
     "protected-branch": rule_protected_branch,
     "fan-out": rule_fan_out,
     "guard-config": rule_guard_config,
+    "tracker-guard": rule_tracker_guard,
 }
 PRE_RULES = list(RULES)
 
