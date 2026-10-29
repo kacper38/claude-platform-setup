@@ -69,6 +69,12 @@ install_into() {
     echo "commit: $(git -C "$HERE" rev-parse HEAD 2>/dev/null || echo unknown)"
     echo "installed: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "$target/.claude/kit-version"
+  if [[ -f "$target/.githooks/commit-msg" ]] && git -C "$target" rev-parse --git-dir >/dev/null 2>&1; then
+    chmod +x "$target"/.githooks/* 2>/dev/null || true
+    if [[ "$(git -C "$target" config --get core.hooksPath 2>/dev/null)" != ".githooks" ]]; then
+      git -C "$target" config core.hooksPath .githooks && echo "  git config core.hooksPath .githooks (commit-msg gate active)"
+    fi
+  fi
   local changes=$((copied + inited))
   echo "Kit installed into $target — changes: $changes (copied $copied, initialized $inited), unchanged $unchanged, kept $kept, init-only skipped $skipped"
   [[ -f "$target/CLAUDE.md" ]] && ! grep -q '@AGENTS.md' "$target/CLAUDE.md" && \

@@ -29,9 +29,20 @@ jobs:
           ./install.sh --into /tmp/kit-target | tee /tmp/second.txt
           grep -q 'changes: 0 ' /tmp/second.txt
           test -f /tmp/kit-target/.claude/kit-version
+  commit-msg:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - name: commit messages in the PR range
+        run: python3 tools/commit_msg.py --range "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+
   ci:
     name: ci
-    needs: test
+    needs: [test, commit-msg]
     runs-on: ubuntu-latest
     steps:
       - run: echo "all checks green"
