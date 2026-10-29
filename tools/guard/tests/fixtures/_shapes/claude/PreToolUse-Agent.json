@@ -1,0 +1,19 @@
+{
+  "_fixture": {
+    "harness": "claude",
+    "source": "captured 2026-10-29 from a Claude Code probe session (haiku, claude -p), redacted and path-normalized"
+  },
+  "cwd": "/work/repo",
+  "hook_event_name": "PreToolUse",
+  "permission_mode": "bypassPermissions",
+  "prompt_id": "1103eadc-8a72-43b5-a1c5-9920466f7d19",
+  "session_id": "51c39006-554a-4788-8d3c-2348d9bd22d0",
+  "tool_input": {
+    "description": "Run echo sub command and reply done",
+    "prompt": "run the shell command echo sub and reply done",
+    "subagent_type": "general-purpose"
+  },
+  "tool_name": "Agent",
+  "tool_use_id": "toolu_01XWpBPAK2k68TxnixwsQfPb",
+  "transcript_path": "~/.claude/projects/<project>/51c39006-554a-4788-8d3c-2348d9bd22d0.jsonl"
+}

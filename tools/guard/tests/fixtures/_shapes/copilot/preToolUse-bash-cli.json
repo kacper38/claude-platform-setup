@@ -1,0 +1,15 @@
+{
+  "_fixture": {
+    "format": "cli-camelCase",
+    "harness": "copilot",
+    "source": "synthesized 2026-10-29 from the GitHub hooks reference and VS Code hooks docs; replace with a capture from VS Code + Copilot (plan step 1.3 on the work machine)"
+  },
+  "cwd": "/work/repo",
+  "hookEventName": "preToolUse",
+  "sessionId": "0f6c2c9e-0000-4000-8000-000000000002",
+  "timestamp": 1761732000000,
+  "toolArgs": {
+    "command": "ls -la"
+  },
+  "toolName": "bash"
+}

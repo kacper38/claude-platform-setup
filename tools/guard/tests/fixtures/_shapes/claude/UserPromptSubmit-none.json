@@ -1,0 +1,13 @@
+{
+  "_fixture": {
+    "harness": "claude",
+    "source": "captured 2026-10-29 from a Claude Code probe session (haiku, claude -p), redacted and path-normalized"
+  },
+  "cwd": "/work/repo",
+  "hook_event_name": "UserPromptSubmit",
+  "permission_mode": "bypassPermissions",
+  "prompt": "Do exactly these steps with tools, in order, no questions: 1) run the shell command `ls -la` 2) read README.md 3) write a new file hello.txt containing exactly: hi 4) edit hello.txt replacing hi with hello 5) use the Agent tool (subagent_type general-purpose) with the prompt \"run the shell command echo sub and reply done\" 6) reply with the single word done.",
+  "prompt_id": "1103eadc-8a72-43b5-a1c5-9920466f7d19",
+  "session_id": "51c39006-554a-4788-8d3c-2348d9bd22d0",
+  "transcript_path": "~/.claude/projects/<project>/51c39006-554a-4788-8d3c-2348d9bd22d0.jsonl"
+}

@@ -1,0 +1,10 @@
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+uv.lock
+# personal Claude Code settings
+.claude/settings.local.json
+# written by `install.sh --into .`; meaningful in task repos, noise in the kit's own repo
+.claude/kit-version
+.claude/kit-manifest.sha256

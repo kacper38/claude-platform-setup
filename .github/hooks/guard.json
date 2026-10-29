@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "python3 tools/guard/guard.py hook pre --wrapper github",
+        "timeout": 5
+      }
+    ]
+  }
+}

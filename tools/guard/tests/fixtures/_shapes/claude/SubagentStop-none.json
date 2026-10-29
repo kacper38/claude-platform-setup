@@ -1,0 +1,27 @@
+{
+  "_fixture": {
+    "harness": "claude",
+    "source": "captured 2026-10-29 from a Claude Code probe session (haiku, claude -p), redacted and path-normalized"
+  },
+  "agent_id": "a68dff8872d03d56d",
+  "agent_transcript_path": "~/.claude/projects/<project>/51c39006-554a-4788-8d3c-2348d9bd22d0/subagents/agent-a68dff8872d03d56d.jsonl",
+  "agent_type": "general-purpose",
+  "background_tasks": [
+    {
+      "agent_type": "general-purpose",
+      "description": "Run echo sub command and reply done",
+      "id": "a68dff8872d03d56d",
+      "status": "running",
+      "type": "subagent"
+    }
+  ],
+  "cwd": "/work/repo",
+  "hook_event_name": "SubagentStop",
+  "last_assistant_message": "Done",
+  "permission_mode": "bypassPermissions",
+  "prompt_id": "1103eadc-8a72-43b5-a1c5-9920466f7d19",
+  "session_crons": [],
+  "session_id": "51c39006-554a-4788-8d3c-2348d9bd22d0",
+  "stop_hook_active": false,
+  "transcript_path": "~/.claude/projects/<project>/51c39006-554a-4788-8d3c-2348d9bd22d0.jsonl"
+}

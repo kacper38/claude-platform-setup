@@ -1,0 +1,11 @@
+{
+  "_fixture": {
+    "harness": "claude",
+    "source": "captured 2026-10-29 from a Claude Code probe session (haiku, claude -p), redacted and path-normalized"
+  },
+  "cwd": "/work/repo",
+  "hook_event_name": "SessionStart",
+  "session_id": "51c39006-554a-4788-8d3c-2348d9bd22d0",
+  "source": "startup",
+  "transcript_path": "~/.claude/projects/<project>/51c39006-554a-4788-8d3c-2348d9bd22d0.jsonl"
+}

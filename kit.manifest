@@ -1,0 +1,12 @@
+# claude-platform-setup kit manifest — what `install.sh --into <repo>` copies into a task repo.
+# init    = copied only when missing in the target, never touched afterwards (the project owns it)
+# managed = kept in sync; a target that was edited locally is kept unless --force
+# map     = directory copied recursively (managed), source -> destination
+init    AGENTS.md
+init    CLAUDE.md
+init    .claude/settings.json
+init    .claude/guard.json
+managed .github/hooks/guard.json
+managed tools/guard/guard.py
+map     agents  .claude/agents
+map     skills  .claude/skills

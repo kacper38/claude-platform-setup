@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit|MultiEdit|NotebookEdit|Read|Agent|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 tools/guard/guard.py hook pre --wrapper claude",
+            "timeout": 5,
+            "statusMessage": "guard"
+          }
+        ]
+      }
+    ]
+  }
+}

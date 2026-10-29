@@ -1,11 +1,86 @@
 #!/usr/bin/env bash
-# Install this Claude Code setup into ~/.claude (user scope).
+# Install this setup.
 # Usage:
-#   ./install.sh              install (backs up any files it would overwrite)
-#   ./install.sh --uninstall  remove everything listed in the install manifest
+#   ./install.sh                      user scope: agents + skills into ~/.claude (backs up overwrites)
+#   ./install.sh --uninstall          remove everything listed in the user-scope manifest
+#   ./install.sh --into <repo> [--force]
+#                                     repo scope: copy the kit listed in kit.manifest into a task
+#                                     repo (AGENTS.md, hooks, guard, skills, agents); idempotent;
+#                                     locally modified managed files are kept unless --force
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
+
+# ---------------------------------------------------------------------------
+# Repo scope: install.sh --into <repo> [--force]
+# ---------------------------------------------------------------------------
+sha256() { shasum -a 256 "$1" | cut -d' ' -f1; }
+
+install_into() {
+  local target="$1" force="${2:-}"
+  [[ -d "$target" ]] || { echo "install.sh: target directory not found: $target" >&2; exit 1; }
+  target="$(cd "$target" && pwd)"
+  local hashes="$target/.claude/kit-manifest.sha256"
+  local copied=0 kept=0 unchanged=0 inited=0 skipped=0
+  declare -A old_hash=()
+  if [[ -f "$hashes" ]]; then
+    while read -r h f; do [[ -n "$f" ]] && old_hash["$f"]="$h"; done < "$hashes"
+  fi
+  local new_hashes=()
+
+  copy_managed() {  # $1 = source path (abs), $2 = destination path relative to target
+    local src="$1" rel="$2" dst="$target/$2"
+    local src_hash; src_hash="$(sha256 "$src")"
+    new_hashes+=("$src_hash  $rel")
+    if [[ ! -f "$dst" ]]; then
+      mkdir -p "$(dirname "$dst")"; cp "$src" "$dst"; copied=$((copied + 1)); return
+    fi
+    local dst_hash; dst_hash="$(sha256 "$dst")"
+    if [[ "$dst_hash" == "$src_hash" ]]; then unchanged=$((unchanged + 1)); return; fi
+    if [[ "${old_hash[$rel]:-}" == "$dst_hash" || -n "$force" ]]; then
+      cp "$src" "$dst"; copied=$((copied + 1))
+    else
+      echo "  kept (modified locally, use --force): $rel"; kept=$((kept + 1))
+    fi
+  }
+
+  while read -r mode src dst; do
+    [[ -z "$mode" || "$mode" == \#* ]] && continue
+    case "$mode" in
+      init)
+        if [[ -e "$target/$src" ]]; then skipped=$((skipped + 1)); else
+          mkdir -p "$target/$(dirname "$src")"
+          if [[ "$src" == "CLAUDE.md" ]]; then printf '@AGENTS.md\n' > "$target/CLAUDE.md"; else cp "$HERE/$src" "$target/$src"; fi
+          inited=$((inited + 1))
+        fi ;;
+      managed) copy_managed "$HERE/$src" "$src" ;;
+      map)
+        while IFS= read -r -d '' f; do
+          copy_managed "$f" "$dst/${f#"$HERE/$src/"}"
+        done < <(find "$HERE/$src" -type f -print0) ;;
+      *) echo "install.sh: bad manifest line: $mode $src $dst" >&2; exit 1 ;;
+    esac
+  done < "$HERE/kit.manifest"
+
+  mkdir -p "$target/.claude"
+  printf '%s\n' "${new_hashes[@]}" | sort -k2 > "$hashes"
+  {
+    echo "source: $(git -C "$HERE" config --get remote.origin.url 2>/dev/null || echo "$HERE")"
+    echo "commit: $(git -C "$HERE" rev-parse HEAD 2>/dev/null || echo unknown)"
+    echo "installed: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  } > "$target/.claude/kit-version"
+  local changes=$((copied + inited))
+  echo "Kit installed into $target — changes: $changes (copied $copied, initialized $inited), unchanged $unchanged, kept $kept, init-only skipped $skipped"
+  [[ -f "$target/CLAUDE.md" ]] && ! grep -q '@AGENTS.md' "$target/CLAUDE.md" && \
+    echo "  note: $target/CLAUDE.md exists without @AGENTS.md — add the import by hand if you want Claude Code to read AGENTS.md"
+  return 0
+}
+
+if [[ "${1:-}" == "--into" ]]; then
+  [[ -n "${2:-}" ]] || { echo "usage: ./install.sh --into <repo> [--force]" >&2; exit 1; }
+  install_into "$2" "${3:-}"
+  exit 0
+fi
 DEST="${CLAUDE_DIR:-$HOME/.claude}"
 MANIFEST="$DEST/claude-platform-setup.manifest"
 

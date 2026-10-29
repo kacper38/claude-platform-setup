@@ -1,6 +1,6 @@
 # System description — claude-platform-setup
 
-Status: 2026-10-29, after step 1.1 of `docs/PLAN-2026-10-mature-setup.md`.
+Status: 2026-10-29, after step 1.2 of `docs/PLAN-2026-10-mature-setup.md`.
 Components marked *planned* do not exist yet; the plan step that creates them is named.
 
 ## Purpose
@@ -19,8 +19,8 @@ external verification with shown output, decisions recorded.
 | `AGENTS.md` (+ `CLAUDE.md` = `@AGENTS.md`) | exists | Claude Code; Copilot (VS Code, CLI, cloud); Codex; Gemini CLI | rules only |
 | `agents/*.md` | exists (12) | Claude Code via `~/.claude/agents` (`install.sh`); VS Code reads `.claude/agents` in task repos | prompts |
 | `skills/*/SKILL.md` | exists | Claude Code via `~/.claude/skills`; Copilot via `.claude/skills` in task repos | procedures |
-| `kit/` + `install.sh --into <repo>` | planned (1.2) | — | copies the files below into a task repo; writes `.claude/kit-version` |
-| `tools/guard` + `.claude/settings.json` + `.github/hooks/guard.json` | planned (1.2–1.5, 2.1–2.3) | Claude Code hooks; Copilot hooks | hook JSON on stdin → decision JSON; fixtures from both harnesses; no network |
+| `kit.manifest` + `install.sh --into <repo>` | exists (1.2) | — | copies the listed files into a task repo; writes `.claude/kit-version` and a hash manifest so locally edited files are kept |
+| `tools/guard/guard.py` + `.claude/settings.json` + `.github/hooks/guard.json` | exists (1.2: engine, delete-guard); more rules planned (1.4–1.5, 2.1–2.3) | Claude Code hooks; Copilot hooks | hook JSON on stdin → `ask`/`deny` JSON (never `allow`); fixtures from both harnesses; no network |
 | `tools/tracker` + label families + `label-lint.yml` | planned (2.4–2.7) | humans and agents via the CLI; GitHub via `gh` | issues, labels, comments on GitHub |
 | `.githooks/commit-msg`, fresh review, egress screen | planned (3.1–3.3) | git; `claude -p` at home; Copilot code review at work | diffs, screened before they leave the machine |
 | memory store, session ledger | planned (3.4–3.6) | Claude Code only | memory files (private repo); token usage (local) |

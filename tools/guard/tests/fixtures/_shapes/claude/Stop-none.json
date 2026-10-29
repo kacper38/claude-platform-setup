@@ -1,0 +1,16 @@
+{
+  "_fixture": {
+    "harness": "claude",
+    "source": "captured 2026-10-29 from a Claude Code probe session (haiku, claude -p), redacted and path-normalized"
+  },
+  "background_tasks": [],
+  "cwd": "/work/repo",
+  "hook_event_name": "Stop",
+  "last_assistant_message": "done",
+  "permission_mode": "bypassPermissions",
+  "prompt_id": "1103eadc-8a72-43b5-a1c5-9920466f7d19",
+  "session_crons": [],
+  "session_id": "51c39006-554a-4788-8d3c-2348d9bd22d0",
+  "stop_hook_active": false,
+  "transcript_path": "~/.claude/projects/<project>/51c39006-554a-4788-8d3c-2348d9bd22d0.jsonl"
+}
