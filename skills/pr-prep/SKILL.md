@@ -16,7 +16,13 @@ When the user runs `/pr-prep`:
    - `git diff main...HEAD --stat` — list changed files
    - `git log main..HEAD --oneline` — list commits
 
-3. **Generate PR description**:
+3. **Tracker link** (when the repo has `tools/tracker`): find the issue you
+   claimed — `python3 tools/tracker/tracker.py list --status in-progress` —
+   and `show N` for its acceptance criteria. They go into the PR checklist
+   verbatim; the body carries `Refs #N`. Never `Fixes`/`Closes`/`Resolves`:
+   closing is the owner's protocol (`tracker owner done`), not GitHub's.
+
+4. **Generate PR description**:
 
 ```markdown
 ## Summary
@@ -27,6 +33,11 @@ When the user runs `/pr-prep`:
 
 ### [Area]
 - [list changed files with brief description]
+
+Refs #N
+
+## Acceptance criteria (from the tracker issue)
+- [ ] [copied verbatim from `tracker show N`]
 
 ## Checklist
 - [ ] Tests: all passing (X tests, Y suites)
@@ -41,5 +52,10 @@ When the user runs `/pr-prep`:
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
-4. **Check docs**: check project docs (AGENTS.md/README) for sections needing updates, if present
-5. **Output**: Ready-to-use PR body for `gh pr create`
+5. **Check docs**: check project docs (AGENTS.md/README) for sections needing updates, if present
+6. **Open and hand over**: `gh pr create --title … --body-file <file>`; then, with the
+   URL it printed, `python3 tools/tracker/tracker.py review N --pr <url>`
+   (in-progress → review; refused if the head is not the claimed branch or the
+   body lacks `Refs #N`) and post the /verify summary with
+   `python3 tools/tracker/tracker.py note N "verify: <one line per check>"`.
+   Without a tracker in the repo, stop at the ready-to-use PR body.

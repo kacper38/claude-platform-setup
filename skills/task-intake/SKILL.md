@@ -33,6 +33,14 @@ and a scaffolded workspace. Nothing gets built before this completes.
    Do not start step 1 of the plan until approved.
 6. **First commit.** After approval: `git init` if needed, commit the scaffolding
    (`chore: scaffold task workspace with plan and assumptions`).
+7. **Decompose into the tracker** (when the repo has `tools/tracker` and the
+   owner has run `tracker owner labels-sync`): one
+   `python3 tools/tracker/tracker.py new` per plan step — `--title` the step,
+   one `--ac` per line of its verify column, `--scope`/`--scope-limit` from the
+   plan's cut line, `--source` the plan file and step number. Validate each
+   acceptance criterion against the code read-only first (the command exists,
+   the path exists). Issues land in `status/backlog`; the owner promotes with
+   `tracker owner ready N`, and you claim with `tracker claim N` when you start.
 
 ## Output
 

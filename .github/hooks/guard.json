@@ -6,6 +6,13 @@
         "command": "python3 tools/guard/guard.py hook pre --wrapper github",
         "timeout": 5
       }
+    ],
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "python3 tools/tracker/session_start.py",
+        "timeout": 5
+      }
     ]
   }
 }
