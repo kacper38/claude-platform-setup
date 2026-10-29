@@ -19,7 +19,9 @@ SUBJECT_MAX = 72
 _SUBJECT_RE = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[^()\s]+)\))?(?P<bang>!)?: (?P<subject>\S.*)$")
 _CLOSING_RE = re.compile(r"\b(close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+(?:[\w.-]+/[\w.-]+)?#\d+", re.IGNORECASE)
 _TRAILER_RE = re.compile(r"^[A-Za-z][A-Za-z0-9-]*: \S")
-_SKIP_RE = re.compile(r"^(Merge |Revert |fixup! |squash! )")
+_SKIP_RE = re.compile(
+    r"^(Merge (branch|pull request|remote-tracking branch|tag|commit) |Revert \"|fixup! |squash! |amend! )"
+)
 NOT_IMPERATIVE = {
     "added", "adding", "adds", "fixed", "fixing", "fixes", "updated", "updating", "updates", "changed", "changing",
     "changes", "removed", "removing", "removes", "refactored", "refactoring", "implemented", "implementing",
@@ -44,7 +46,7 @@ def problems(message: str, allow_fixups: bool = True) -> list:
         return ["empty commit message"]
     subject_line = lines[0].rstrip()
     out = []
-    if subject_line.startswith(("fixup! ", "squash! ")) and not allow_fixups:
+    if subject_line.startswith(("fixup! ", "squash! ", "amend! ")) and not allow_fixups:
         out.append("fixup!/squash! commits must be squashed before the PR gate")
     elif _SKIP_RE.match(subject_line):
         pass
@@ -67,7 +69,7 @@ def problems(message: str, allow_fixups: bool = True) -> list:
             out.append(f"subject is {len(subject_line)} chars, max {SUBJECT_MAX}")
     if len(lines) > 1 and lines[1].strip():
         out.append("one blank line between subject and body")
-    kw = _CLOSING_RE.search(message)
+    kw = _CLOSING_RE.search("\n".join(lines))  # comment lines are gone, as git would strip them
     if kw:
         out.append(f"closing keyword `{kw.group(0)}` closes an issue behind the tracker; write `Refs #N`")
     body = [ln for ln in lines[1:] if ln.strip()]
