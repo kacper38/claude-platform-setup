@@ -28,15 +28,25 @@ NOT_IMPERATIVE = {
 }
 
 
-def problems(message: str) -> list:
-    lines = [ln for ln in message.replace("\r\n", "\n").split("\n") if not ln.startswith("#")]
+_SCISSORS_RE = re.compile(r"^# -{8,} >8 -{8,}\s*$", re.MULTILINE)
+
+
+def problems(message: str, allow_fixups: bool = True) -> list:
+    """Problems with a commit message; accepts the raw COMMIT_EDITMSG (comments and the `git commit -v` diff cut)."""
+    message = message.replace("\r\n", "\n")
+    cut = _SCISSORS_RE.search(message)
+    if cut:
+        message = message[: cut.start()]
+    lines = [ln for ln in message.split("\n") if not ln.startswith("#")]
     while lines and not lines[0].strip():
         lines.pop(0)
     if not lines:
         return ["empty commit message"]
     subject_line = lines[0].rstrip()
     out = []
-    if _SKIP_RE.match(subject_line):
+    if subject_line.startswith(("fixup! ", "squash! ")) and not allow_fixups:
+        out.append("fixup!/squash! commits must be squashed before the PR gate")
+    elif _SKIP_RE.match(subject_line):
         pass
     else:
         m = _SUBJECT_RE.match(subject_line)
@@ -90,7 +100,7 @@ def check_range(rng: str) -> int:
         if r.returncode != 0:
             print(f"commit-msg: cannot read {sha[:10]}: {r.stderr.strip()}", file=sys.stderr)
             return 2
-        probs = problems(r.stdout)
+        probs = problems(r.stdout, allow_fixups=False)
         if probs:
             bad += 1
             print(f"{sha[:10]}: " + "; ".join(probs), file=sys.stderr)

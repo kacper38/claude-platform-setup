@@ -81,3 +81,18 @@ def test_range_check_in_a_tmp_repo(tmp_path):
 def test_githooks_shim_exists_and_is_executable():
     shim = SRC.parents[1] / ".githooks" / "commit-msg"
     assert shim.exists() and shim.stat().st_mode & 0o111
+
+
+def test_verbose_commit_diff_below_scissors_is_ignored():
+    raw = ("feat: add x\n\nbody\n\n# Please enter the commit message\n"
+           "# ------------------------ >8 ------------------------\n"
+           "# Do not modify or remove the line above.\n"
+           "diff --git a/t.py b/t.py\n+# Fixes #12 in a comment inside the diff\n+Co-Authored-By: not a trailer\n")
+    assert cm.problems(raw) == []
+
+
+def test_fixups_pass_the_hook_but_not_the_range_gate():
+    assert cm.problems("fixup! feat: x") == []
+    probs = cm.problems("fixup! feat: x", allow_fixups=False)
+    assert probs == ["fixup!/squash! commits must be squashed before the PR gate"]
+
