@@ -69,3 +69,7 @@ monthly figure when cost is a dimension. Newest block last. Compliance angle inl
 - Project hooks are NOT snapshotted at session start: a hook added to `.claude/settings.json` fired in the same Claude Code session that wrote it (observed 2026-10-29); the rev 4 "hook snapshotting" probe is thereby answered; revisit if: a later Claude Code version changes it.
 - Fixture corpus is generated: `tools/guard/tests/make_fixtures.py` holds the case tables and writes `tests/fixtures/<rule>/<harness>/<decision>/`; a test fails when the files on disk differ from the generator, so cases are edited in one place; revisit if: never.
 - `claude -p --model fable` works (model id `claude-fable-5-1` in `modelUsage`, verified 2026-10-29), so agent frontmatter can pin `fable` by alias; revisit if: the alias disappears.
+
+## 2026-10-29 — step 1.5: scratch-markdown guard
+
+- A NEW `.md` written inside a git tree outside the documented homes (`docs/`, `.claude/`, `.github/`, `skills/`, `agents/`, `.agents/`, `evidence/`, the root `README/DECISIONS/AGENTS/CLAUDE/CHANGELOG/CONTRIBUTING/SECURITY/LICENSE.md`, any `README.md`, `SKILL.md`, `AGENTS.md`) → `ask`, in both harnesses; existing files, non-markdown, edits and paths outside a repo are never judged; `scratch_md_mode` in `.claude/guard.json` (`ask` → `deny` after a month without approvals, `off` for a repo that wants none; `KZ_SCRATCH_MD` overrides); revisit if: a repo keeps approving the prompt (then extend `scratch_md_allow` there, not the default).

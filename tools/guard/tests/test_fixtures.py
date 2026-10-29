@@ -32,12 +32,16 @@ def test_fixture(guard, rule, harness, decision, path):
         assert got[1], "a reason is mandatory"
 
 
+FILESYSTEM_RULES = {"scratch-md"}  # blocking cases depend on a real tree: see test_scratch_md.py
+
+
 def test_every_rule_has_a_corpus(guard):
     for name in guard.RULES:
         for harness in ("claude", "copilot"):
             d = FIX / name / harness
             assert (d / "allow").exists(), f"{name}/{harness}: no allow cases"
-            assert (d / "ask").exists() or (d / "deny").exists(), f"{name}/{harness}: no blocking cases"
+            if name not in FILESYSTEM_RULES:
+                assert (d / "ask").exists() or (d / "deny").exists(), f"{name}/{harness}: no blocking cases"
 
 
 def test_corpus_matches_generator(tmp_path):

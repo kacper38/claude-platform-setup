@@ -134,6 +134,13 @@ CASES: dict = {
         ("allow", "shell", {"command": "curl https://api.github.com/repos/x/y"}, CLIENT),
         ("allow", "shell", {"command": "git status"}, CLIENT),
     ],
+    # blocking cases need a real git tree and live in test_scratch_md.py
+    "scratch-md": [
+        ("allow", "write", {"path": "docs/notes.md", "content": "# notes"}),
+        ("allow", "write", {"path": "README.md", "content": "# x"}),
+        ("allow", "write", {"path": "src/README.md", "content": "# x"}),
+        ("allow", "write", {"path": "notes.txt", "content": "x"}),
+    ],
 }
 
 ENVELOPES = {

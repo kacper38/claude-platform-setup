@@ -127,6 +127,12 @@ DEFAULTS = {
     "telemetry_dir": "~/.claude/telemetry",
     "protected_branches": ["main"],
     "boundary": "own",
+    "scratch_md_mode": "ask",  # ask | deny | off
+    "scratch_md_allow": [
+        "docs/", ".claude/", ".github/", "skills/", "agents/", ".agents/", "evidence/",
+        "README.md", "DECISIONS.md", "AGENTS.md", "CLAUDE.md", "CHANGELOG.md", "CONTRIBUTING.md",
+        "SECURITY.md", "LICENSE.md", "**/README.md", "**/SKILL.md", "**/AGENTS.md",
+    ],
 }
 
 
@@ -158,6 +164,9 @@ def load_config(start: str) -> dict:
     env = os.environ.get("KZ_BOUNDARY")
     if env:
         cfg["boundary"] = env.strip()
+    env = os.environ.get("KZ_SCRATCH_MD")
+    if env:
+        cfg["scratch_md_mode"] = env.strip()
     return cfg
 
 
@@ -597,6 +606,55 @@ def rule_egress_guard(ev: Event, cfg: dict) -> Optional[Decision]:
     return None
 
 # ----------------------------------------------------------------------------
+# scratch-md: a NEW markdown file outside the documented homes is a smell (plan step 1.5)
+# ----------------------------------------------------------------------------
+
+
+def git_root(start_dir: str) -> Optional[str]:
+    d = os.path.abspath(start_dir)
+    while True:
+        if os.path.exists(os.path.join(d, ".git")):
+            return d
+        parent = os.path.dirname(d)
+        if parent == d:
+            return None
+        d = parent
+
+
+SCRATCH_MSG = (
+    "Scratch-markdown guard: {rel} would be a new .md outside the documented homes ({homes}, …). "
+    "Findings belong in the reply, the PR body or the tracker; documentation goes under docs/. "
+    "Say yes only if this file is meant to stay."
+)
+
+
+def rule_scratch_md(ev: Event, cfg: dict) -> Optional[Decision]:
+    if ev.event != "PreToolUse" or ev.kind != "write":
+        return None
+    mode = str(cfg.get("scratch_md_mode") or "ask")
+    if mode == "off":
+        return None
+    p = ev.abspath()
+    if not p or not p.lower().endswith((".md", ".markdown")) or os.path.exists(p):
+        return None
+    root = git_root(os.path.dirname(p))
+    if root is None:
+        return None
+    rel = os.path.relpath(p, root).replace(os.sep, "/")
+    allow = cfg.get("scratch_md_allow") or DEFAULTS["scratch_md_allow"]
+    base = os.path.basename(rel)
+    for pat in allow:
+        if pat.endswith("/") and rel.startswith(pat):
+            return None
+        if pat.startswith("**/") and base == pat[3:]:
+            return None
+        if rel == pat:
+            return None
+    verdict = "deny" if mode == "deny" else "ask"
+    return verdict, SCRATCH_MSG.format(rel=rel, homes=", ".join(allow[:4]))
+
+
+# ----------------------------------------------------------------------------
 # Registry
 # ----------------------------------------------------------------------------
 
@@ -609,6 +667,7 @@ RULES: dict[str, Rule] = {
     "git-guard": rule_git_guard,
     "deploy-ask": rule_deploy_ask,
     "egress-guard": rule_egress_guard,
+    "scratch-md": rule_scratch_md,
 }
 PRE_RULES = list(RULES)
 
