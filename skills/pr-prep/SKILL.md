@@ -11,6 +11,12 @@ When the user runs `/pr-prep`:
 
 1. **Run verification** — run the project's checks via `/verify`:
    - If any check fails → STOP and report
+   - At home, when the repo has `bin/fresh-review`: run it (fresh-context Opus
+     review of `origin/main...HEAD` through the egress screen; receipt under
+     `.git/fresh-review/<sha>.json`). BLOCKER → STOP and fix; otherwise paste
+     its output under "Independent review" below. At work the independent
+     review is Copilot code review on the PR, steered by
+     `.github/instructions/review.instructions.md`; write that instead.
 
 2. **Analyze changes**:
    - `git diff main...HEAD --stat` — list changed files
@@ -48,6 +54,9 @@ Refs #N
 
 ## Test plan
 [Describe how to verify the changes]
+
+## Independent review
+[fresh-review verdict, findings and receipt path — or "Copilot code review on this PR" at work]
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
