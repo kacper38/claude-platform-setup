@@ -86,8 +86,11 @@ def check_range(rng: str) -> int:
         return 2
     bad = 0
     for sha in shas:
-        msg = subprocess.run(["git", "log", "-1", "--format=%B", sha], capture_output=True, text=True).stdout
-        probs = problems(msg)
+        r = subprocess.run(["git", "log", "-1", "--format=%B", sha], capture_output=True, text=True)
+        if r.returncode != 0:
+            print(f"commit-msg: cannot read {sha[:10]}: {r.stderr.strip()}", file=sys.stderr)
+            return 2
+        probs = problems(r.stdout)
         if probs:
             bad += 1
             print(f"{sha[:10]}: " + "; ".join(probs), file=sys.stderr)
