@@ -29,7 +29,8 @@ def write_transcript(tmp_path, session="s1", subagents=1):
         line("claude-fable-5-1", 1, 1),  # two lines without any id: each counts, they must not collapse
         line("claude-fable-5-1", 1, 1),
         json.dumps(["not", "an", "object"]),
-        json.dumps({"type": "assistant", "message": {"model": "m", "usage": {"input_tokens": "lots"}}}),
+        json.dumps({"type": "assistant", "message": {"model": "claude-fable-5-1",
+                                                     "usage": {"input_tokens": 5, "output_tokens": "lots"}}}),
     ]) + "\n", encoding="utf-8")
     sub = proj / session / "subagents"
     sub.mkdir(parents=True)
@@ -43,7 +44,7 @@ def test_parse_transcript_dedups_and_counts_errors(ledger, tmp_path):
     usage, errors = ledger.parse_transcript(str(main))
     assert errors == 2  # one unparsable line, one non-numeric usage
     assert usage["claude-fable-5-1"] == {"input": 112, "output": 57, "cache_read": 1000, "cache_write": 200,
-                                         "turns": 4}
+                                         "turns": 4}  # the half-numeric turn added nothing, not even its 5 input
     assert usage["<synthetic>"]["turns"] == 1
 
 
@@ -85,12 +86,20 @@ def test_hook_appends_monthly_file_and_never_fails(ledger, tmp_path, tdir):
     assert len(files) == 1 and files[0].startswith("sessions-") and files[0].endswith(".jsonl")
     row = json.loads((tdir / files[0]).read_text().splitlines()[0])
     assert row["session"] == "s1"
-    # garbage in: still exit 0, a line with parse_errors
+    # garbage in: exit 0 and nothing to count, so no line; a transcript path that does not exist: a line with errors
     assert ledger.main(["hook"], stdin=io.StringIO("{{{"), out=io.StringIO(), err=err) == 0
+    assert len((tdir / files[0]).read_text().splitlines()) == 1
     assert ledger.main(["hook"], stdin=io.StringIO(json.dumps({"transcript_path": "/nope.jsonl"})),
                        out=io.StringIO(), err=err) == 0
     rows = [json.loads(ln) for ln in (tdir / files[0]).read_text().splitlines()]
-    assert len(rows) == 3 and rows[1]["parse_errors"] >= 1 and rows[2]["parse_errors"] >= 1
+    assert len(rows) == 2 and rows[1]["parse_errors"] >= 1 and rows[1]["models"] == {}
+
+
+def test_hook_writes_nothing_for_copilot_or_without_transcript(ledger, tdir):
+    for raw in ({"timestamp": "2026-10-29T10:00:00Z", "session_id": "c1", "transcript_path": "/x.jsonl"},
+                {"session_id": "s2", "cwd": "/Users/t/x", "reason": "exit"}):
+        assert ledger.main(["hook"], stdin=io.StringIO(json.dumps(raw)), out=io.StringIO(), err=io.StringIO()) == 0
+    assert not tdir.exists()
 
 
 def test_hook_writes_an_error_line_when_the_builder_raises(ledger, tdir, monkeypatch):

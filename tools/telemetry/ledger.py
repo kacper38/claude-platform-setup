@@ -3,7 +3,8 @@
 
   ledger.py hook                 SessionEnd: read the transcript (and its subagent transcripts), join the spawn
                                  log, price with prices.json, append one line to <telemetry>/sessions-YYYY-MM.jsonl.
-                                 Always exit 0; problems land in the line as parse_errors.
+                                 Always exit 0; problems land in the line as parse_errors. Copilot payloads
+                                 and payloads without transcript_path write nothing.
   ledger.py cost [--days 7]      per project and model: tokens, cost, spawns, subagent share (> 70 % flagged),
                                  and hook prompts per rule from <telemetry>/decisions.jsonl.
 Telemetry dir: KZ_TELEMETRY_DIR or ~/.claude/telemetry.
@@ -76,15 +77,15 @@ def parse_transcript(path: str) -> tuple:
             key = d.get("requestId") or msg.get("id") or d.get("uuid") or ("line", n)  # no id: count the line
             seen[key] = (str(msg.get("model") or "unknown"), usage)
     for model, usage in seen.values():
-        m = per_model.setdefault(model, {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0, "turns": 0})
         try:
-            m["input"] += int(usage.get("input_tokens") or 0)
-            m["output"] += int(usage.get("output_tokens") or 0)
-            m["cache_read"] += int(usage.get("cache_read_input_tokens") or 0)
-            m["cache_write"] += int(usage.get("cache_creation_input_tokens") or 0)
-        except (TypeError, ValueError):
+            vals = [int(usage.get(k) or 0) for k in
+                    ("input_tokens", "output_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")]
+        except (TypeError, ValueError):  # all or nothing: a half-counted turn is worse than a parse error
             errors += 1
             continue
+        m = per_model.setdefault(model, {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0, "turns": 0})
+        m["input"], m["output"], m["cache_read"], m["cache_write"] = (
+            m["input"] + vals[0], m["output"] + vals[1], m["cache_read"] + vals[2], m["cache_write"] + vals[3])
         m["turns"] += 1
     return per_model, errors
 
@@ -169,6 +170,10 @@ def cmd_hook(stdin, tdir: str, err) -> int:
     except ValueError:
         raw = {}
     raw = raw if isinstance(raw, dict) else {}
+    if "timestamp" in raw or "toolName" in raw or "toolArgs" in raw:  # Copilot payload: not our ledger
+        return 0
+    if not raw.get("transcript_path"):  # nothing to count (Claude Code always sends it)
+        return 0
     try:
         entry = build_entry(raw, tdir, load_prices())
     except Exception as exc:  # noqa: BLE001 - a ledger must never hold a session end hostage; the line says why
