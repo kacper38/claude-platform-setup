@@ -98,3 +98,27 @@ def test_gitleaks_used_when_present(egress, tmp_path, monkeypatch):
     fake.write_text("#!/bin/sh\nexit 1\n")
     assert egress.screen_text("tool error falls back to own patterns", "claude", OWN) == []
     assert os.path.exists(str(fake))
+
+
+def test_malformed_config_holds_everything(egress, tmp_path, monkeypatch):
+    (tmp_path / ".claude").mkdir()
+    (tmp_path / ".claude" / "guard.json").write_text("{not json")
+    monkeypatch.chdir(tmp_path)
+    cfg = egress.load_config(str(tmp_path))
+    reasons = egress.screen_text("plain", "claude", cfg)
+    assert any(r.startswith("config:") and "JSONDecodeError" in r for r in reasons)
+    assert "boundary:client->claude" not in reasons, "claude is an allowed target; the config error alone holds"
+    assert "boundary:client->gemini" in egress.screen_text("plain", "gemini", cfg)
+
+
+def test_env_boundary_only_tightens(egress, tmp_path, monkeypatch):
+    (tmp_path / ".claude").mkdir()
+    (tmp_path / ".claude" / "guard.json").write_text('{"boundary": "client"}')
+    monkeypatch.setenv("KZ_BOUNDARY", "own")
+    assert egress.load_config(str(tmp_path))["boundary"] == "client"
+    (tmp_path / ".claude" / "guard.json").write_text('{"boundary": "own"}')
+    monkeypatch.setenv("KZ_BOUNDARY", "client")
+    assert egress.load_config(str(tmp_path))["boundary"] == "client"
+    monkeypatch.delenv("KZ_BOUNDARY")
+    assert egress.load_config(str(tmp_path))["boundary"] == "own"
+
