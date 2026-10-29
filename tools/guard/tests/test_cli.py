@@ -82,3 +82,15 @@ def test_help_version_rules(guard, guard_path):
     assert run(guard_path, ["version"], "").stdout.strip().decode() == guard.VERSION
     assert b"delete-guard" in run(guard_path, ["rules"], "").stdout
     assert b"Usage" in run(guard_path, ["help"], "").stdout
+
+
+def test_ask_and_deny_are_logged_to_decisions_jsonl(guard_path, tmp_path, monkeypatch):
+    monkeypatch.setenv("KZ_TELEMETRY_DIR", str(tmp_path / "t"))  # the env wins over guard.json
+    assert run(guard_path, ["hook", "pre"], _bash("claude", "rm -rf build")).returncode == 0
+    assert run(guard_path, ["hook", "pre"], _bash("claude", "git push --force origin main")).returncode == 2
+    assert run(guard_path, ["hook", "pre"], _bash("claude", "git status")).returncode == 0
+    rows = [json.loads(ln) for ln in (tmp_path / "t" / "decisions.jsonl").read_text().splitlines()]
+    assert [r["verdict"] for r in rows] == ["ask", "deny"]
+    assert rows[0]["rules"] == ["delete-guard"] and rows[0]["tool"] == "Bash" and rows[0]["harness"] == "claude"
+    assert "git-guard" in rows[1]["rules"]
+    assert not any("rm -rf" in json.dumps(r) or "--force" in json.dumps(r) for r in rows)  # no command text

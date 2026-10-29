@@ -26,7 +26,7 @@ import subprocess
 import sys
 from typing import Callable, Optional
 
-VERSION = "0.4.0"
+VERSION = "0.4.1"
 
 # ----------------------------------------------------------------------------
 # Harness normalization
@@ -992,6 +992,7 @@ def run_hook(target: str, wrapper: Optional[str]) -> int:
         return 0
     names = PRE_RULES if target == "pre" else [target]
     decisions: list[Decision] = []
+    fired: list[str] = []
     for name in names:
         rule = RULES.get(name)
         if rule is None:
@@ -999,7 +1000,32 @@ def run_hook(target: str, wrapper: Optional[str]) -> int:
         d = rule(ev, cfg)
         if d:
             decisions.append(d)
-    return respond(combine(decisions), ev.event or "PreToolUse")
+            fired.append(name)
+    final = combine(decisions)
+    if final:
+        log_decision(final, fired, ev, cfg)
+    return respond(final, ev.event or "PreToolUse")
+
+
+def log_decision(decision: Decision, fired: list[str], ev: Event, cfg: dict) -> None:
+    """One line per ask/deny in <telemetry>/decisions.jsonl, so `ledger.py cost` can show prompt fatigue per rule.
+    No command text or paths: the rule names and the tool are enough to tune thresholds."""
+    entry = {
+        "ts": _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "verdict": decision[0],
+        "rules": fired,
+        "tool": ev.tool,
+        "event": ev.event,
+        "harness": ev.harness,
+        "session": ev.session,
+    }
+    path = os.path.join(telemetry_dir(cfg), "decisions.jsonl")
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(entry, sort_keys=True) + "\n")
+    except OSError as exc:
+        print(f"guard: decision log failed: {exc}", file=sys.stderr)
 
 
 def main(argv: list[str]) -> int:
