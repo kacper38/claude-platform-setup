@@ -10,6 +10,7 @@ managed .github/hooks/guard.json
 managed tools/guard/guard.py
 managed tools/tracker/tracker.py
 managed tools/tracker/label_lint.py
+managed tools/tracker/session_start.py
 managed .github/workflows/label-lint.yml
 init    .github/ISSUE_TEMPLATE/task.yml
 init    .github/ISSUE_TEMPLATE/bug.yml

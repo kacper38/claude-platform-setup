@@ -24,3 +24,8 @@ def tracker():
 @pytest.fixture(scope="session")
 def label_lint():
     return _load("label_lint")
+
+
+@pytest.fixture(scope="session")
+def session_start():
+    return _load("session_start")

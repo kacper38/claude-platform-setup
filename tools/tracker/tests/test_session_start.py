@@ -1,0 +1,38 @@
+"""The session-start digest: short, grouped, silent on failure."""
+import io
+from contextlib import redirect_stdout
+
+
+def test_digest_groups_and_caps(tracker, session_start):
+    fb = tracker.FakeBackend()
+    fb.create_issue("handoff: db migration", "", ["type/handoff", "status/backlog"])
+    fb.create_issue("blocked one", "", ["type/todo", "status/blocked"])
+    for k in range(6):
+        fb.create_issue(f"ready {k}", "", ["type/todo", "status/ready"])
+    done = fb.create_issue("done", "", ["type/todo", "status/done"])
+    fb.issues[done.number].state = "closed"
+    lines = session_start.digest(fb)
+    assert len(lines) == 3 and lines[0].startswith("Open handoffs") and "#1 handoff: db migration" in lines[0]
+    assert "Blocked" in lines[1] and "ready 3" in lines[2] and "+2 more" in lines[2] and "done" not in " ".join(lines)
+    assert all(len(line) < 400 for line in lines)
+
+
+def test_empty_repo_prints_nothing(tracker, session_start):
+    assert session_start.digest(tracker.FakeBackend()) == []
+
+
+def test_failure_is_silent(session_start, monkeypatch):
+    trk = session_start.tracker  # the module session_start imported, not the fixture's copy
+
+    class Broken(trk.Backend):
+        def __init__(self, repo=None):
+            pass
+
+        def list_issues(self, labels=None, state="open"):
+            raise trk.TrackerError("gh: not logged in")
+
+    monkeypatch.setattr(session_start.tracker, "GitHubBackend", Broken)
+    out = io.StringIO()
+    with redirect_stdout(out):
+        code = session_start.main([])
+    assert code == 0 and out.getvalue() == ""

@@ -25,6 +25,18 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 tools/tracker/session_start.py",
+            "timeout": 5,
+            "statusMessage": "tracker"
+          }
+        ]
+      }
     ]
   },
   "permissions": {
