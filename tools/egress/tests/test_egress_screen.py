@@ -122,3 +122,13 @@ def test_env_boundary_only_tightens(egress, tmp_path, monkeypatch):
     monkeypatch.delenv("KZ_BOUNDARY")
     assert egress.load_config(str(tmp_path))["boundary"] == "own"
 
+
+@pytest.mark.parametrize("text", ['["client"]', '{"boundary": 1}', '{"egress_allowed_targets": "copilot"}',
+                                  '{"client_markers": "acme"}', '{"client_markers": [1]}'])
+def test_wrong_shape_config_is_a_config_error(egress, tmp_path, text):
+    (tmp_path / ".claude").mkdir()
+    (tmp_path / ".claude" / "guard.json").write_text(text)
+    cfg = egress.load_config(str(tmp_path))
+    assert cfg["config_error"] and cfg["boundary"] == "client"
+    assert any(r.startswith("config:") for r in egress.screen_text("plain", "claude", cfg))
+
