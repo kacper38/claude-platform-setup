@@ -176,6 +176,29 @@ CASES: dict = {
         ("allow", "edit", {"path": "docs/settings.json"}),
         ("allow", "read", {"path": ".claude/settings.json"}),
     ],
+    "tracker-guard": [
+        *shell(
+            "deny",
+            "gh issue close 1", "gh issue create --title x --body y", "gh issue edit 3 --add-label status/done",
+            "gh issue comment 2 --body done", "gh issue reopen 4", "gh issue delete 5", "gh label create foo",
+            "gh label delete bar", "gh api -X PATCH repos/o/r/issues/1 -f state=closed",
+            "gh api repos/o/r/issues/1/labels -f labels[]=x", "gh api --method DELETE repos/o/r/labels/foo",
+            "curl -X PATCH https://api.github.com/repos/o/r/issues/1 -d '{}'",
+            "curl -H 'Authorization: x' https://api.github.com/repos/o/r/issues -d @body.json",
+            "http PATCH https://api.github.com/repos/o/r/issues/1 state=closed",
+            "tracker owner ready 1", "python3 tools/tracker/tracker.py owner done 2", "cd repo && gh issue close 7",
+        ),
+        *shell(
+            "allow",
+            "gh issue view 1", "gh issue list --state open", "gh issue status", "gh api repos/o/r/issues/1",
+            "gh api repos/o/r/issues --jq '.[].number'", "curl https://api.github.com/repos/o/r/issues/1",
+            "gh pr create --fill", "gh pr merge 3 --rebase", "gh label list",
+            "tracker claim 4 --branch step-5", "python3 tools/tracker/tracker.py new --title x",
+            "tracker list --status ready", "gh issue create --label handoff --title 'handoff: x' --body y",
+            "gh issue create --title x --label agent-loop", "gh api -X POST repos/o/r/pulls -f title=x",
+            "echo 'gh issue close 1'",
+        ),
+    ],
 }
 
 ENVELOPES = {
