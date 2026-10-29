@@ -1,0 +1,3 @@
+#!/bin/sh
+# Stamped by install.sh (core.hooksPath = .githooks). Rules live in tools/commit_msg.py; CI re-checks the PR range.
+exec python3 "$(git rev-parse --show-toplevel)/tools/commit_msg.py" "$1"
