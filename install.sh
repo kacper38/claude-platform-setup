@@ -72,7 +72,12 @@ install_into() {
   if [[ -f "$target/.githooks/commit-msg" ]] && git -C "$target" rev-parse --git-dir >/dev/null 2>&1; then
     chmod +x "$target"/.githooks/* 2>/dev/null || true
     local hp; hp="$(git -C "$target" config --get core.hooksPath 2>/dev/null || true)"
-    if [[ -z "$hp" ]]; then
+    local gitdir; gitdir="$(git -C "$target" rev-parse --git-path hooks)"
+    [[ "$gitdir" == /* ]] || gitdir="$target/$gitdir"
+    local live=""; live="$(find "$gitdir" -maxdepth 1 -type f ! -name '*.sample' 2>/dev/null | xargs -n1 basename 2>/dev/null | tr '\n' ' ')"
+    if [[ -z "$hp" && -n "$live" ]]; then
+      echo "  left core.hooksPath unset: $target has live hooks in .git/hooks ($live); call tools/commit_msg.py from them to keep the gate"
+    elif [[ -z "$hp" ]]; then
       git -C "$target" config core.hooksPath .githooks && echo "  git config core.hooksPath .githooks (commit-msg gate active)"
     elif [[ "$hp" != ".githooks" ]]; then
       echo "  left core.hooksPath=$hp alone: call tools/commit_msg.py from your own commit-msg hook to keep the gate"

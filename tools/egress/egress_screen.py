@@ -64,10 +64,14 @@ def load_config(start: str) -> dict:
             try:
                 with open(candidate, encoding="utf-8") as fh:
                     data = json.load(fh)
-                if isinstance(data, dict):
-                    for k in cfg:
-                        if k in data:
-                            cfg[k] = data[k]
+                if not isinstance(data, dict):
+                    raise ValueError("top level is not an object")
+                for k, typ in (("boundary", str), ("client_markers", list), ("egress_allowed_targets", list)):
+                    if k in data:
+                        ok = isinstance(data[k], typ) and (typ is not list or all(isinstance(x, str) for x in data[k]))
+                        if not ok:
+                            raise ValueError(f"{k} must be a {typ.__name__}" + (" of strings" if typ is list else ""))
+                        cfg[k] = data[k]
             except (OSError, ValueError) as exc:  # a broken policy file holds everything; it never means "no policy"
                 cfg["config_error"] = f"{candidate}: {exc.__class__.__name__}"
                 cfg["boundary"] = "client"

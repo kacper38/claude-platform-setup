@@ -34,8 +34,13 @@ jobs:
           git init -q /tmp/kit-git && ./install.sh --into /tmp/kit-git >/dev/null
           [ "$(git -C /tmp/kit-git config --get core.hooksPath)" = ".githooks" ]
           git init -q /tmp/kit-husky && git -C /tmp/kit-husky config core.hooksPath .husky
-          ./install.sh --into /tmp/kit-husky | grep -q "left core.hooksPath=.husky"
+          ./install.sh --into /tmp/kit-husky > /tmp/husky.txt
+          grep -q "left core.hooksPath=.husky" /tmp/husky.txt
           [ "$(git -C /tmp/kit-husky config --get core.hooksPath)" = ".husky" ]
+          git init -q /tmp/kit-live && printf '#!/bin/sh\nexit 0\n' > /tmp/kit-live/.git/hooks/pre-commit
+          ./install.sh --into /tmp/kit-live > /tmp/live.txt
+          grep -q "live hooks in .git/hooks (pre-commit" /tmp/live.txt
+          [ -z "$(git -C /tmp/kit-live config --get core.hooksPath)" ]
   commit-msg:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
