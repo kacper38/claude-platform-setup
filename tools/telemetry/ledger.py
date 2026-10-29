@@ -1,0 +1,274 @@
+#!/usr/bin/env python3
+"""ledger — SessionEnd token ledger and cost report (plan step 3.6; Claude Code only).
+
+  ledger.py hook                 SessionEnd: read the transcript (and its subagent transcripts), join the spawn
+                                 log, price with prices.json, append one line to <telemetry>/sessions-YYYY-MM.jsonl.
+                                 Always exit 0; problems land in the line as parse_errors.
+  ledger.py cost [--days 7]      per project and model: tokens, cost, spawns, subagent share (> 70 % flagged),
+                                 and hook prompts per rule from <telemetry>/decisions.jsonl.
+Telemetry dir: KZ_TELEMETRY_DIR or ~/.claude/telemetry.
+"""
+import argparse
+import datetime as _dt
+import glob
+import json
+import os
+import sys
+from typing import Optional
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+PRICES_PATH = os.path.join(HERE, "prices.json")
+SUBAGENT_SHARE_FLAG = 0.70
+
+
+def telemetry_dir() -> str:
+    return os.path.expanduser(os.environ.get("KZ_TELEMETRY_DIR") or "~/.claude/telemetry")
+
+
+def load_prices(path: str = PRICES_PATH) -> dict:
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh).get("usd_per_mtok") or {}
+    except (OSError, ValueError):
+        return {}
+
+
+def price_for(model: str, prices: dict) -> Optional[dict]:
+    best = None
+    for prefix, table in prices.items():
+        if model.startswith(prefix) and (best is None or len(prefix) > len(best[0])):
+            best = (prefix, table)
+    return best[1] if best else None
+
+
+def usage_cost(u: dict, table: Optional[dict]) -> Optional[float]:
+    if not table:
+        return None
+    return round((u["input"] * table["input"] + u["output"] * table["output"] + u["cache_read"] * table["cache_read"]
+                  + u["cache_write"] * table["cache_write"]) / 1_000_000, 6)
+
+
+def parse_transcript(path: str) -> tuple:
+    """({model: {input, output, cache_read, cache_write, turns}}, parse_errors); one usage per requestId."""
+    per_model: dict = {}
+    seen: dict = {}
+    errors = 0
+    try:
+        fh = open(path, encoding="utf-8", errors="replace")
+    except OSError:
+        return per_model, 1
+    with fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                d = json.loads(line)
+            except ValueError:
+                errors += 1
+                continue
+            if d.get("type") != "assistant":
+                continue
+            msg = d.get("message") or {}
+            usage = msg.get("usage")
+            if not isinstance(usage, dict):
+                continue
+            key = d.get("requestId") or msg.get("id") or d.get("uuid")
+            seen[key] = (msg.get("model") or "unknown", usage)
+    for model, usage in seen.values():
+        m = per_model.setdefault(model, {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0, "turns": 0})
+        m["input"] += int(usage.get("input_tokens") or 0)
+        m["output"] += int(usage.get("output_tokens") or 0)
+        m["cache_read"] += int(usage.get("cache_read_input_tokens") or 0)
+        m["cache_write"] += int(usage.get("cache_creation_input_tokens") or 0)
+        m["turns"] += 1
+    return per_model, errors
+
+
+def merge(into: dict, other: dict) -> None:
+    for model, u in other.items():
+        m = into.setdefault(model, {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0, "turns": 0})
+        for k in m:
+            m[k] += u[k]
+
+
+def total_tokens(per_model: dict) -> int:
+    return sum(u["input"] + u["output"] + u["cache_read"] + u["cache_write"] for u in per_model.values())
+
+
+def spawns_for(session: str, tdir: str) -> list:
+    path = os.path.join(tdir, "spawns.jsonl")
+    out = []
+    if not os.path.exists(path):
+        return out
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            try:
+                row = json.loads(line)
+            except ValueError:
+                continue
+            if row.get("session") == session and row.get("event") == "PreToolUse":
+                out.append({"agent": row.get("agent"), "model": row.get("model")})
+    return out
+
+
+def build_entry(raw: dict, tdir: str, prices: dict, now: Optional[_dt.datetime] = None) -> dict:
+    now = now or _dt.datetime.now(_dt.timezone.utc)
+    session = str(raw.get("session_id") or "")
+    transcript = os.path.expanduser(str(raw.get("transcript_path") or ""))
+    main_usage, errors = parse_transcript(transcript) if transcript else ({}, 1)
+    sub_usage: dict = {}
+    sub_count = 0
+    sub_dir = os.path.join(os.path.dirname(transcript), session, "subagents") if transcript else ""
+    if sub_dir and os.path.isdir(sub_dir):
+        for p in sorted(glob.glob(os.path.join(sub_dir, "*.jsonl"))):
+            u, e = parse_transcript(p)
+            errors += e
+            sub_count += 1
+            merge(sub_usage, u)
+    models: dict = {}
+    combined: dict = {}
+    merge(combined, main_usage)
+    merge(combined, sub_usage)
+    for model, u in combined.items():
+        models[model] = {**u, "cost_usd": usage_cost(u, price_for(model, prices))}
+    main_t, sub_t = total_tokens(main_usage), total_tokens(sub_usage)
+    share = round(sub_t / (main_t + sub_t), 3) if (main_t + sub_t) else 0.0
+    costs = [m["cost_usd"] for m in models.values()]
+    priced = bool(costs) and all(c is not None for c in costs)
+    return {
+        "ts": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "session": session,
+        "project": str(raw.get("cwd") or ""),
+        "reason": raw.get("reason"),
+        "models": models,
+        "cost_usd": round(sum(costs), 4) if priced else None,
+        "subagents": {"transcripts": sub_count, "tokens": sub_t, "share": share, "flag": share > SUBAGENT_SHARE_FLAG},
+        "spawns": spawns_for(session, tdir),
+        "parse_errors": errors,
+    }
+
+
+def append_entry(entry: dict, tdir: str) -> str:
+    os.makedirs(tdir, exist_ok=True)
+    path = os.path.join(tdir, f"sessions-{entry['ts'][:7]}.jsonl")
+    with open(path, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(entry, sort_keys=True) + "\n")
+    return path
+
+
+def cmd_hook(stdin, tdir: str, err) -> int:
+    try:
+        raw = json.loads(stdin.read() or "{}")
+    except ValueError:
+        raw = {}
+    try:
+        entry = build_entry(raw if isinstance(raw, dict) else {}, tdir, load_prices())
+        append_entry(entry, tdir)
+    except OSError as exc:  # a ledger must never hold a session end hostage
+        err.write(f"ledger: {exc}\n")
+    return 0
+
+
+def load_sessions(tdir: str, since: _dt.datetime) -> list:
+    rows = []
+    for path in sorted(glob.glob(os.path.join(tdir, "sessions-*.jsonl"))):
+        with open(path, encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                try:
+                    ts = _dt.datetime.strptime(row.get("ts", ""), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=_dt.timezone.utc)
+                except ValueError:
+                    continue
+                if ts >= since:
+                    rows.append(row)
+    return rows
+
+
+def load_decisions(tdir: str, since: _dt.datetime) -> dict:
+    """{rule: {ask: n, deny: n}} from decisions.jsonl written by the guard."""
+    out: dict = {}
+    path = os.path.join(tdir, "decisions.jsonl")
+    if not os.path.exists(path):
+        return out
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            try:
+                row = json.loads(line)
+                ts = _dt.datetime.strptime(row.get("ts", ""), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=_dt.timezone.utc)
+            except ValueError:
+                continue
+            if ts < since:
+                continue
+            for rule in row.get("rules") or ["?"]:
+                r = out.setdefault(rule, {"ask": 0, "deny": 0})
+                r[row.get("verdict", "ask")] = r.get(row.get("verdict", "ask"), 0) + 1
+    return out
+
+
+def cost_report(tdir: str, days: int, out, now: Optional[_dt.datetime] = None) -> int:
+    now = now or _dt.datetime.now(_dt.timezone.utc)
+    since = now - _dt.timedelta(days=days)
+    rows = load_sessions(tdir, since)
+    if not rows:
+        out.write(f"ledger: no sessions in the last {days} days under {tdir}\n")
+        return 0
+    agg: dict = {}
+    flagged = []
+    spawn_count = 0
+    for row in rows:
+        project = os.path.basename(row.get("project") or "") or "?"
+        for model, u in (row.get("models") or {}).items():
+            a = agg.setdefault((project, model), {"sessions": 0, "tokens": 0, "output": 0, "cost": 0.0, "priced": True})
+            a["sessions"] += 1
+            a["tokens"] += u["input"] + u["output"] + u["cache_read"] + u["cache_write"]
+            a["output"] += u["output"]
+            if u.get("cost_usd") is None:
+                a["priced"] = False
+            else:
+                a["cost"] += u["cost_usd"]
+        spawn_count += len(row.get("spawns") or [])
+        if (row.get("subagents") or {}).get("flag"):
+            flagged.append(row.get("session", "")[:8])
+    out.write(f"ledger: {len(rows)} sessions in the last {days} days\n")
+    out.write(f"{'project':<32} {'model':<26} {'sess':>4} {'tokens':>12} {'output':>9} {'cost':>9}\n")
+    for (project, model), a in sorted(agg.items()):
+        cost = f"${a['cost']:.2f}" if a["priced"] else "n/a"
+        out.write(f"{project[:32]:<32} {model[:26]:<26} {a['sessions']:>4} "
+                  f"{a['tokens']:>12,} {a['output']:>9,} {cost:>9}\n")
+    out.write(f"spawns: {spawn_count}; sessions with subagent share > {int(SUBAGENT_SHARE_FLAG * 100)} %: "
+              + (", ".join(flagged) if flagged else "none") + "\n")
+    decisions = load_decisions(tdir, since)
+    if decisions:
+        out.write("hook prompts per rule (ask/deny): " + ", ".join(
+            f"{rule} {v['ask']}/{v['deny']}" for rule, v in sorted(decisions.items())) + "\n")
+    return 0
+
+
+def main(argv: list, stdin=None, out=None, err=None) -> int:
+    stdin, out, err = stdin or sys.stdin, out or sys.stdout, err or sys.stderr
+    ap = argparse.ArgumentParser(prog="ledger", add_help=False)
+    sub = ap.add_subparsers(dest="verb")
+    sub.add_parser("hook")
+    s = sub.add_parser("cost")
+    s.add_argument("--days", type=int, default=7)
+    if not argv or argv[0] in ("help", "-h", "--help"):
+        out.write(__doc__.strip() + "\n")
+        return 0
+    try:
+        ns = ap.parse_args(argv)
+    except SystemExit:
+        return 1
+    if ns.verb == "hook":
+        return cmd_hook(stdin, telemetry_dir(), err)
+    if ns.verb == "cost":
+        return cost_report(telemetry_dir(), ns.days, out)
+    out.write(__doc__.strip() + "\n")
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
