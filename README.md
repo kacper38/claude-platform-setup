@@ -106,6 +106,9 @@ cp AGENTS.md <repo>/AGENTS.md && printf '@AGENTS.md\n' > <repo>/CLAUDE.md
 mkdir -p <repo>/.claude && cp -R skills <repo>/.claude/skills && cp -R agents <repo>/.claude/agents
 ```
 
+Using it on a work machine with VS Code + GitHub Copilot:
+[`docs/USING-AT-WORK.md`](docs/USING-AT-WORK.md).
+
 ## License
 
 MIT

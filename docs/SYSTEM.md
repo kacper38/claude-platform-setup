@@ -34,7 +34,7 @@ every tool call in both harnesses.
 
 - Home: macOS, Claude Code (subscription), GitHub account `kacper38`; this repo dogfoods the kit.
 - Work: VS Code + GitHub Copilot (hooks, skills and MCP policies enabled, per Kacper 2026-10-29);
-  one pilot repo in plan step 3.9 with `KZ_BOUNDARY=client`.
+  one pilot repo in plan step 3.9 with `KZ_BOUNDARY=client`. See `docs/USING-AT-WORK.md`.
 - Deferred (plan Appendix A): self-hosted Forgejo, Proxmox host `pierun`, a CI runner VM.
 
 ## Interfaces
