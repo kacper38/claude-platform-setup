@@ -55,7 +55,8 @@ class Item:
 
 def load_config(start: str) -> dict:
     """boundary, client_markers, egress_allowed_targets from the nearest .claude/guard.json, then env."""
-    cfg: dict = {"boundary": "own", "client_markers": [], "egress_allowed_targets": DEFAULT_ALLOWED_TARGETS}
+    cfg: dict = {"boundary": "own", "client_markers": [], "egress_allowed_targets": DEFAULT_ALLOWED_TARGETS,
+                 "config_error": ""}
     d = os.path.abspath(start)
     while True:
         candidate = os.path.join(d, ".claude", "guard.json")
@@ -67,16 +68,17 @@ def load_config(start: str) -> dict:
                     for k in cfg:
                         if k in data:
                             cfg[k] = data[k]
-            except (OSError, ValueError) as exc:
-                print(f"egress: ignoring unreadable {candidate}: {exc}", file=sys.stderr)
+            except (OSError, ValueError) as exc:  # a broken policy file holds everything; it never means "no policy"
+                cfg["config_error"] = f"{candidate}: {exc.__class__.__name__}"
+                cfg["boundary"] = "client"
             break
         parent = os.path.dirname(d)
         if parent == d:
             break
         d = parent
-    env = os.environ.get("KZ_BOUNDARY")
-    if env:
-        cfg["boundary"] = env.strip()
+    env = (os.environ.get("KZ_BOUNDARY") or "").strip()
+    if env == "client":
+        cfg["boundary"] = "client"  # the environment can tighten the boundary, never loosen a repo's `client`
     return cfg
 
 
@@ -103,6 +105,8 @@ def gitleaks_hit(data: bytes) -> Optional[bool]:
 
 def screen_item(item: Item, target: str, cfg: dict, max_bytes: int, use_gitleaks: bool = True) -> list:
     reasons = []
+    if cfg.get("config_error"):
+        reasons.append(f"config:{cfg['config_error']}")
     if len(item.data) > max_bytes:
         reasons.append(f"size:{len(item.data)}>{max_bytes}")
     for name in secret_hits(item.text):

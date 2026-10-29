@@ -29,6 +29,13 @@ jobs:
           ./install.sh --into /tmp/kit-target | tee /tmp/second.txt
           grep -q 'changes: 0 ' /tmp/second.txt
           test -f /tmp/kit-target/.claude/kit-version
+      - name: installer sets core.hooksPath only when unset
+        run: |
+          git init -q /tmp/kit-git && ./install.sh --into /tmp/kit-git >/dev/null
+          [ "$(git -C /tmp/kit-git config --get core.hooksPath)" = ".githooks" ]
+          git init -q /tmp/kit-husky && git -C /tmp/kit-husky config core.hooksPath .husky
+          ./install.sh --into /tmp/kit-husky | grep -q "left core.hooksPath=.husky"
+          [ "$(git -C /tmp/kit-husky config --get core.hooksPath)" = ".husky" ]
   commit-msg:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -42,7 +49,20 @@ jobs:
 
   ci:
     name: ci
+    if: always()
     needs: [test, commit-msg]
     runs-on: ubuntu-latest
     steps:
-      - run: echo "all checks green"
+      - name: every needed job succeeded (a skipped job is not green; GitHub would count it as passing)
+        env:
+          TEST: ${{ needs.test.result }}
+          COMMIT_MSG: ${{ needs.commit-msg.result }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          echo "test=$TEST commit-msg=$COMMIT_MSG event=$EVENT"
+          [ "$TEST" = "success" ] || { echo "test did not succeed"; exit 1; }
+          if [ "$EVENT" = "pull_request" ]; then
+            [ "$COMMIT_MSG" = "success" ] || { echo "commit-msg did not succeed"; exit 1; }
+          else
+            [ "$COMMIT_MSG" = "skipped" ] || [ "$COMMIT_MSG" = "success" ] || { echo "commit-msg failed"; exit 1; }
+          fi

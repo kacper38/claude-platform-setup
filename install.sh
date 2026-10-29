@@ -71,8 +71,11 @@ install_into() {
   } > "$target/.claude/kit-version"
   if [[ -f "$target/.githooks/commit-msg" ]] && git -C "$target" rev-parse --git-dir >/dev/null 2>&1; then
     chmod +x "$target"/.githooks/* 2>/dev/null || true
-    if [[ "$(git -C "$target" config --get core.hooksPath 2>/dev/null)" != ".githooks" ]]; then
+    local hp; hp="$(git -C "$target" config --get core.hooksPath 2>/dev/null || true)"
+    if [[ -z "$hp" ]]; then
       git -C "$target" config core.hooksPath .githooks && echo "  git config core.hooksPath .githooks (commit-msg gate active)"
+    elif [[ "$hp" != ".githooks" ]]; then
+      echo "  left core.hooksPath=$hp alone: call tools/commit_msg.py from your own commit-msg hook to keep the gate"
     fi
   fi
   local changes=$((copied + inited))
