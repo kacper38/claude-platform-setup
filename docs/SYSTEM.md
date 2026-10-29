@@ -1,6 +1,6 @@
 # System description — claude-platform-setup
 
-Status: 2026-10-29, after step 2.7 of `docs/PLAN-2026-10-mature-setup.md`.
+Status: 2026-10-29, after step 2.8 (ruleset; dogfood issues pending the owner's labels-sync) of `docs/PLAN-2026-10-mature-setup.md`.
 Components marked *planned* do not exist yet; the plan step that creates them is named.
 
 ## Purpose
@@ -41,7 +41,7 @@ every tool call in both harnesses.
 
 ## Interfaces
 
-- GitHub via `gh` (issues, labels, PRs, checks); GitHub Actions for CI and `label-lint`.
+- GitHub via `gh` (issues, labels, PRs, checks); GitHub Actions for CI and `label-lint`; a ruleset on `main` (PR + green `ci`, no force push, no deletion).
 - Claude Code hooks (`.claude/settings.json`) and Copilot hooks (`.github/hooks/*.json`,
   `.claude/settings.json`): JSON on stdin, `permissionDecision` on stdout, exit 2 = deny.
 - `claude -p` for the home fresh-context review (through the egress screen); Copilot code review at work.
