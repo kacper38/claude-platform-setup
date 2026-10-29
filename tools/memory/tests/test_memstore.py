@@ -148,6 +148,23 @@ def test_push_refuses_projects_outside_allowlist(memstore, home, monkeypatch):
     assert heads.returncode == 0
 
 
+def test_push_refuses_when_the_touched_set_is_unknown(memstore, home, monkeypatch):
+    run(memstore, ["init"])
+    _add_remote(home)
+    monkeypatch.setenv("KZ_MEMORY_PUSH", ALPHA)
+    store = memstore.Store()
+    real = store.git
+
+    def broken(args, check=True):
+        if args[0] == "log":
+            return subprocess.CompletedProcess(args, 128, "", "fatal: bad object")
+        return real(args, check)
+
+    store.git = broken
+    out = io.StringIO()
+    assert store.push(out) == 3 and "cannot list unpushed commits" in out.getvalue()
+
+
 def test_push_allows_when_only_allowlisted_projects_changed(memstore, home, monkeypatch):
     run(memstore, ["init"])
     _add_remote(home)
@@ -179,6 +196,9 @@ def test_validate_good(memstore):
     ("---\nname: n\ndescription: d\nmetadata:\n  type: project\n---\n", "stale_after"),
     ("---\nname: n\ndescription: d\nmetadata:\n  type: reference\n---\n", "stale_after"),
     ("---\nname: n\ndescription: d\nmetadata:\n  type: project\n  stale_after: soon\n---\n", "not a date"),
+    ("---\nname: n\ndescription: d\nmetadata:\n  type: project\n  stale_after: 2026-02-30\n---\n", "not a date"),
+    ("---\nname: n\ndescription: d\nmetadata:\n  type: user\n  verified: true\n  verified_on: 2026-13-01\n---\n",
+     "verified_on"),
     ("---\nname: n\ndescription: d\nmetadata:\n  type: project\n  stale_after: 2020-01-01\n---\n", "stale since"),
     ("---\nname: n\ndescription: d\nmetadata:\n  type: user\n  status: gone\n---\n", "metadata.status"),
     ("---\nname: n\ndescription: d\nmetadata:\n  type: user\n  status: superseded\n---\n", "superseded_by"),
@@ -259,6 +279,31 @@ def test_deprecate_superseded_by(memstore, home):
     assert "  status: superseded\n  superseded_by: a-two\n" in text
     assert text.endswith("Body of a-one.\n")
     assert memstore.validate_text(text) == []
+
+
+def test_deprecate_refuses_unterminated_frontmatter(memstore, home, tmp_path):
+    bad = tmp_path / "x.md"
+    bad.write_text("---\nname: x\nbody without a closing fence\n", encoding="utf-8")
+    code, _, err = run(memstore, ["deprecate", str(bad)])
+    assert code == 1 and "no frontmatter" in err
+    assert bad.read_text(encoding="utf-8") == "---\nname: x\nbody without a closing fence\n"
+
+
+def test_cwd_slug_matches_claude_code_naming(memstore):
+    assert memstore.cwd_slug("/Users/t/Developer/my_app v2.0") == "-Users-t-Developer-my-app-v2-0"
+    assert memstore.cwd_slug("/Users/kacperz/Developer/claude-platform-setup") == ALPHA.replace(
+        "-Users-t-Developer-alpha", "-Users-kacperz-Developer-claude-platform-setup")
+
+
+def test_hook_survives_an_impossible_date(memstore, home):
+    run(memstore, ["init"])
+    _, wt = store_paths(home)
+    path = os.path.join(wt, ALPHA, "memory", "odd.md")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("---\nname: odd\ndescription: d\nmetadata:\n  type: project\n  stale_after: 2026-02-30\n---\n")
+    code, _, err = run(memstore, ["hook"], stdin=json.dumps({"tool_input": {"file_path": path}}))
+    assert code == 2 and "not a date" in err
+    assert memstore.digest(memstore.Store(), "/Users/t/Developer/alpha")[0].startswith("Memory: 3 files")
 
 
 def test_triage_and_digest(memstore, home):
