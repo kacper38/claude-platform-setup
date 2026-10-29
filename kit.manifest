@@ -11,6 +11,13 @@ managed tools/guard/guard.py
 managed tools/tracker/tracker.py
 managed tools/tracker/label_lint.py
 managed tools/tracker/session_start.py
+managed tools/commit_msg.py
+managed .githooks/commit-msg
+managed tools/egress/egress_screen.py
+managed tools/review/fresh_review.py
+managed tools/review/prompt.md
+managed bin/fresh-review
+managed .github/instructions/review.instructions.md
 managed .github/workflows/label-lint.yml
 init    .github/ISSUE_TEMPLATE/task.yml
 init    .github/ISSUE_TEMPLATE/bug.yml
