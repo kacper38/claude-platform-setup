@@ -26,6 +26,10 @@ def write_transcript(tmp_path, session="s1", subagents=1):
         "not json at all",
         line("claude-fable-5-1", 10, 5, req="r2"),
         line("<synthetic>", 0, 0, req="r3"),  # Claude Code writes these for aborted turns: no usage, no row
+        line("claude-fable-5-1", 1, 1),  # two lines without any id: each counts, they must not collapse
+        line("claude-fable-5-1", 1, 1),
+        json.dumps(["not", "an", "object"]),
+        json.dumps({"type": "assistant", "message": {"model": "m", "usage": {"input_tokens": "lots"}}}),
     ]) + "\n", encoding="utf-8")
     sub = proj / session / "subagents"
     sub.mkdir(parents=True)
@@ -37,9 +41,9 @@ def write_transcript(tmp_path, session="s1", subagents=1):
 def test_parse_transcript_dedups_and_counts_errors(ledger, tmp_path):
     main = write_transcript(tmp_path)
     usage, errors = ledger.parse_transcript(str(main))
-    assert errors == 1
-    assert usage["claude-fable-5-1"] == {"input": 110, "output": 55, "cache_read": 1000, "cache_write": 200,
-                                         "turns": 2}
+    assert errors == 2  # one unparsable line, one non-numeric usage
+    assert usage["claude-fable-5-1"] == {"input": 112, "output": 57, "cache_read": 1000, "cache_write": 200,
+                                         "turns": 4}
     assert usage["<synthetic>"]["turns"] == 1
 
 
@@ -61,7 +65,7 @@ def test_build_entry_joins_subagents_spawns_and_prices(ledger, tmp_path, tdir):
     ]) + "\n")
     raw = {"session_id": "s1", "transcript_path": str(main), "cwd": "/Users/t/x", "reason": "exit"}
     e = ledger.build_entry(raw, str(tdir), PRICES, now=dt.datetime(2026, 10, 29, 12, 0, tzinfo=dt.timezone.utc))
-    assert e["ts"] == "2026-10-29T12:00:00Z" and e["project"] == "/Users/t/x" and e["parse_errors"] == 1
+    assert e["ts"] == "2026-10-29T12:00:00Z" and e["project"] == "/Users/t/x" and e["parse_errors"] == 2
     assert e["models"]["claude-fable-5-1"]["cost_usd"] is None
     assert "<synthetic>" not in e["models"]
     opus = e["models"]["claude-opus-4-5"]
@@ -89,6 +93,14 @@ def test_hook_appends_monthly_file_and_never_fails(ledger, tmp_path, tdir):
     assert len(rows) == 3 and rows[1]["parse_errors"] >= 1 and rows[2]["parse_errors"] >= 1
 
 
+def test_hook_writes_an_error_line_when_the_builder_raises(ledger, tdir, monkeypatch):
+    monkeypatch.setattr(ledger, "build_entry", lambda *a, **k: (_ for _ in ()).throw(KeyError("boom")))
+    raw = json.dumps({"session_id": "s9", "transcript_path": "/x.jsonl", "cwd": "/Users/t/x"})
+    assert ledger.main(["hook"], stdin=io.StringIO(raw), out=io.StringIO(), err=io.StringIO()) == 0
+    row = json.loads((tdir / os.listdir(tdir)[0]).read_text().splitlines()[0])
+    assert row["session"] == "s9" and row["parse_errors"] == 1 and row["error"].startswith("KeyError")
+
+
 def test_cost_report(ledger, tdir):
     tdir.mkdir()
     now = dt.datetime(2026, 10, 29, 12, 0, tzinfo=dt.timezone.utc)
@@ -105,15 +117,18 @@ def test_cost_report(ledger, tdir):
                                         "cost_usd": 9.0}}},
     ]
     (tdir / "sessions-2026-10.jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n")
-    (tdir / "decisions.jsonl").write_text(json.dumps({"ts": "2026-10-28T11:00:00Z", "verdict": "ask",
-                                                      "rules": ["delete-guard"]}) + "\n")
+    (tdir / "decisions.jsonl").write_text("\n".join([
+        json.dumps({"ts": "2026-10-28T11:00:00Z", "verdict": "ask", "rules": ["delete-guard"]}),  # pre-0.4.1 shape
+        json.dumps({"ts": "2026-10-28T11:00:00Z", "verdict": "deny",
+                    "rules": {"delete-guard": "ask", "git-guard": "deny"}}),
+    ]) + "\n")
     out = io.StringIO()
     assert ledger.cost_report(str(tdir), 7, out, now=now) == 0
     text = out.getvalue()
     assert "1 sessions in the last 7 days" in text
     assert "alpha" in text and "$0.50" in text and "n/a" in text and "$9.00" not in text
     assert "spawns: 2; sessions with subagent share > 70 %: abcdefgh" in text
-    assert "hook prompts per rule (ask/deny): delete-guard 1/0" in text
+    assert "hook prompts per rule (ask/deny): delete-guard 2/0, git-guard 0/1" in text
     out = io.StringIO()
     ledger.cost_report(str(tdir / "empty"), 7, out, now=now)
     assert "no sessions" in out.getvalue()

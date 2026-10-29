@@ -58,7 +58,7 @@ def parse_transcript(path: str) -> tuple:
     except OSError:
         return per_model, 1
     with fh:
-        for line in fh:
+        for n, line in enumerate(fh):
             line = line.strip()
             if not line:
                 continue
@@ -67,20 +67,24 @@ def parse_transcript(path: str) -> tuple:
             except ValueError:
                 errors += 1
                 continue
-            if d.get("type") != "assistant":
+            if not isinstance(d, dict) or d.get("type") != "assistant":
                 continue
-            msg = d.get("message") or {}
+            msg = d.get("message") if isinstance(d.get("message"), dict) else {}
             usage = msg.get("usage")
             if not isinstance(usage, dict):
                 continue
-            key = d.get("requestId") or msg.get("id") or d.get("uuid")
-            seen[key] = (msg.get("model") or "unknown", usage)
+            key = d.get("requestId") or msg.get("id") or d.get("uuid") or ("line", n)  # no id: count the line
+            seen[key] = (str(msg.get("model") or "unknown"), usage)
     for model, usage in seen.values():
         m = per_model.setdefault(model, {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0, "turns": 0})
-        m["input"] += int(usage.get("input_tokens") or 0)
-        m["output"] += int(usage.get("output_tokens") or 0)
-        m["cache_read"] += int(usage.get("cache_read_input_tokens") or 0)
-        m["cache_write"] += int(usage.get("cache_creation_input_tokens") or 0)
+        try:
+            m["input"] += int(usage.get("input_tokens") or 0)
+            m["output"] += int(usage.get("output_tokens") or 0)
+            m["cache_read"] += int(usage.get("cache_read_input_tokens") or 0)
+            m["cache_write"] += int(usage.get("cache_creation_input_tokens") or 0)
+        except (TypeError, ValueError):
+            errors += 1
+            continue
         m["turns"] += 1
     return per_model, errors
 
@@ -164,10 +168,17 @@ def cmd_hook(stdin, tdir: str, err) -> int:
         raw = json.loads(stdin.read() or "{}")
     except ValueError:
         raw = {}
+    raw = raw if isinstance(raw, dict) else {}
     try:
-        entry = build_entry(raw if isinstance(raw, dict) else {}, tdir, load_prices())
+        entry = build_entry(raw, tdir, load_prices())
+    except Exception as exc:  # noqa: BLE001 - a ledger must never hold a session end hostage; the line says why
+        entry = {"ts": _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                 "session": str(raw.get("session_id") or ""), "project": str(raw.get("cwd") or ""),
+                 "reason": raw.get("reason"), "models": {}, "cost_usd": None, "subagents": {}, "spawns": [],
+                 "parse_errors": 1, "error": f"{type(exc).__name__}: {exc}"[:200]}
+    try:
         append_entry(entry, tdir)
-    except OSError as exc:  # a ledger must never hold a session end hostage
+    except OSError as exc:
         err.write(f"ledger: {exc}\n")
     return 0
 
@@ -205,9 +216,14 @@ def load_decisions(tdir: str, since: _dt.datetime) -> dict:
                 continue
             if ts < since:
                 continue
-            for rule in row.get("rules") or ["?"]:
+            rules = row.get("rules")
+            if isinstance(rules, dict):  # guard >= 0.4.1: each rule's own verdict
+                pairs = list(rules.items())
+            else:
+                pairs = [(r, row.get("verdict", "ask")) for r in rules or ["?"]]
+            for rule, verdict in pairs:
                 r = out.setdefault(rule, {"ask": 0, "deny": 0})
-                r[row.get("verdict", "ask")] = r.get(row.get("verdict", "ask"), 0) + 1
+                r[verdict] = r.get(verdict, 0) + 1
     return out
 
 
