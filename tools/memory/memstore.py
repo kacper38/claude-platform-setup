@@ -118,7 +118,10 @@ class Store:
             has_remote_main = self.git(["rev-parse", "--verify", "-q", "origin/main"], check=False).returncode == 0
             rng = "origin/main..HEAD" if has_remote_main else "HEAD"  # first push: every commit counts
             r = self.git(["log", "--name-only", "--format=", rng], check=False)
-            touched = {ln.split("/")[0] for ln in r.stdout.split() if "/" in ln} if r.returncode == 0 else set()
+            if r.returncode != 0:  # fail closed: an unknown set of touched projects must not reach GitHub
+                out.write("memstore: push refused, cannot list unpushed commits: " + r.stderr.strip()[:200] + "\n")
+                return 3
+            touched = {ln.split("/")[0] for ln in r.stdout.split() if "/" in ln}
             blocked = sorted(touched - allow)
             if blocked:
                 out.write("memstore: push refused, unpushed commits touch projects outside KZ_MEMORY_PUSH: "
@@ -137,7 +140,7 @@ class Store:
 
 
 # ----------------------------------------------------------------------------
-# Schema (step 3.5): name, description, metadata.type + status, verified, stale_after, trap, superseded_by
+# Schema (step 3.5): name, description, metadata.type + status, stale_after, verified/verified_on, superseded_by
 # ----------------------------------------------------------------------------
 
 
@@ -204,13 +207,23 @@ def validate_text(text: str, today: Optional[_dt.date] = None) -> list:
     if typ in NEEDS_STALE_AFTER and not stale:
         out.append(f"metadata.stale_after: YYYY-MM-DD is required for type {typ} (facts about work and links age)")
     if stale:
-        if not _DATE_RE.match(str(stale)):
+        stale_date = _parse_date(stale)
+        if stale_date is None:
             out.append(f"metadata.stale_after is not a date: {stale!r}")
-        elif _dt.date.fromisoformat(str(stale)) < today and status == "active":
+        elif stale_date < today and status == "active":
             out.append(f"stale since {stale}: re-verify (set verified_on) or deprecate")
-    if meta.get("verified") is True and not _DATE_RE.match(str(meta.get("verified_on", ""))):
+    if meta.get("verified") is True and _parse_date(meta.get("verified_on", "")) is None:
         out.append("verified: true needs metadata.verified_on: YYYY-MM-DD")
     return out
+
+
+def _parse_date(value) -> Optional[_dt.date]:
+    if not _DATE_RE.match(str(value)):
+        return None
+    try:
+        return _dt.date.fromisoformat(str(value))
+    except ValueError:  # 2026-02-30 passes the regex
+        return None
 
 
 def validate_file(path: str, today: Optional[_dt.date] = None) -> list:
@@ -222,8 +235,9 @@ def validate_file(path: str, today: Optional[_dt.date] = None) -> list:
 
 
 def cwd_slug(cwd: str) -> str:
-    """Claude Code's project directory name for a cwd: slashes and dots become dashes."""
-    return re.sub(r"[/.]", "-", os.path.abspath(cwd))
+    """Claude Code's project directory name for a cwd: every character outside [A-Za-z0-9] becomes a dash
+    (checked 2026-10-29 against ~/.claude/projects: `/`, `.`, `_` and spaces all map to `-`)."""
+    return re.sub(r"[^A-Za-z0-9]", "-", os.path.abspath(cwd))
 
 
 def memory_files(worktree: str, slug: str) -> list:
@@ -278,9 +292,9 @@ def set_metadata(path: str, **fields) -> None:
     """Insert or replace keys inside the `metadata:` block of a memory file's frontmatter."""
     with open(path, encoding="utf-8") as fh:
         text = fh.read()
-    if not text.startswith("---\n"):
+    end = text.find("\n---", 4) if text.startswith("---\n") else -1
+    if end < 0:
         raise RuntimeError(f"{path}: no frontmatter")
-    end = text.find("\n---", 4)
     head, tail = text[4:end], text[end:]
     lines = head.splitlines()
     try:
