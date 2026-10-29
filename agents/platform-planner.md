@@ -1,6 +1,7 @@
 ---
 name: platform-planner
 description: Use this agent at the start of any platform task or sub-task to produce a plan before code is written. Triggers: a new task lands, scope is unclear, or the user says "plan this" / "how do we approach this". It never writes code.
+model: fable
 tools: Read, Grep, Glob, Bash
 ---
 

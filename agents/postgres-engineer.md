@@ -1,6 +1,7 @@
 ---
 name: postgres-engineer
 description: Use this agent for PostgreSQL operations and design — backups/PITR, migration safety, performance (EXPLAIN, indexes), RLS/tenant isolation, pgvector tuning, managed Postgres (RDS/Flexible Server). Triggers: "slow query", "safe migration", backup strategy, "index for this", vector search tuning.
+model: opus
 tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 

@@ -101,7 +101,7 @@ Bias toward caution over speed; for trivial tasks use judgment.
 | Task class | Tier | Where it is pinned |
 |---|---|---|
 | Plans, designs, architecture | Fable | the session model while planning; `platform-planner` |
-| Code, infra, verification, review | Opus | `model:` in the engineer and reviewer agents (plan step 1.6) |
+| Code, infra, verification, review | Opus | `model:` in the engineer and reviewer agents (`tools/tests/test_agents.py` enforces it) |
 | Plain lookups and summaries, where a wrong answer is cheap to spot | Sonnet or Haiku | explicit `model:` on the call |
 | Take-home-sized mechanical packets | local fleet tier | `fleet` plugin, only while its batch runs |
 

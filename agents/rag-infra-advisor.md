@@ -1,6 +1,7 @@
 ---
 name: rag-infra-advisor
 description: Use this agent for AI-infrastructure decisions — vector store choice, LLM endpoint architecture (private vs public), embedding/model versioning, eval pipelines in CI, RAG cost control, data residency. Triggers: "which vector store", "how do we host the LLM part", "RAG architecture", designing or reviewing any AI-touching infra. Advisory: recommends, the main thread implements.
+model: fable
 tools: Read, Grep, Glob, Bash
 ---
 

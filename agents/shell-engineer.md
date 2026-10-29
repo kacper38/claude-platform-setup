@@ -1,6 +1,7 @@
 ---
 name: shell-engineer
 description: Use this agent to write or review Bash/shell scripts — provisioning, CI steps, cron jobs, one-liners promoted to scripts. Triggers: "write a bash script", shell review, "why does this script eat errors", quoting/portability questions.
+model: opus
 tools: Read, Grep, Glob, Bash, Edit, Write
 ---
 

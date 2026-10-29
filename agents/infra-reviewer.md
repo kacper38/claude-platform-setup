@@ -1,6 +1,7 @@
 ---
 name: infra-reviewer
 description: Use this agent to review Dockerfiles, CI/CD workflows, Terraform, and compose files for correctness and best practices before committing. Triggers: after writing any infra artifact, "review the Dockerfile/pipeline/terraform". Read-only; complements gxp-compliance-reviewer (which covers the regulatory lens).
+model: opus
 tools: Read, Grep, Glob, Bash
 ---
 

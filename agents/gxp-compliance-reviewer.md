@@ -1,6 +1,7 @@
 ---
 name: gxp-compliance-reviewer
 description: Use this agent to review any artifact (code, Dockerfile, pipeline, Terraform, architecture note) through a GxP/regulated-pharma lens before it is committed or shipped. Triggers: "gxp check", "compliance review", before a demo/release, or after completing an infra component. Read-only; reports findings.
+model: opus
 tools: Read, Grep, Glob, Bash
 ---
 
