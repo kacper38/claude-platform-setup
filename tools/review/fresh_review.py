@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """fresh-review — independent, fresh-context review of the branch diff, with a receipt (plan step 3.3).
 
-  bin/fresh-review [--base origin/main] [--model opus] [--target claude] [--dry-run]
+  bin/fresh-review [--base origin/main] [--model opus] [--dry-run]
 `git diff <base>...HEAD` goes through the egress screen, then with the version-controlled
 prompt (tools/review/prompt.md) to `claude -p` with no tools and a JSON schema. The verdict
 lands in .git/fresh-review/<head-sha>.json and on stdout. Advisory, never a hook: exit 0 for
@@ -44,6 +44,18 @@ SCHEMA = {
     "required": ["verdict", "summary", "findings"],
 }
 EXIT_BY_VERDICT = {"APPROVE": 0, "COMMENT": 0, "BLOCKER": 1}
+TARGET = "claude"  # the destination is always `claude -p`; the egress label must say so, not a flag
+SEVERITY_RANK = {"MINOR": 1, "MAJOR": 2, "BLOCKER": 3}
+
+
+def effective_verdict(verdict: str, findings: list) -> str:
+    """The verdict the findings justify: a BLOCKER finding makes a BLOCKER, any finding makes at least COMMENT."""
+    top = max((SEVERITY_RANK.get(str(f.get("severity")), 0) for f in findings), default=0)
+    if top == 3:
+        return "BLOCKER"
+    if top > 0 and verdict == "APPROVE":
+        return "COMMENT"
+    return verdict
 
 
 class ReviewError(Exception):
@@ -105,7 +117,6 @@ def main(argv: list, cwd: Optional[str] = None, out=None) -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--base")
     ap.add_argument("--model", default="opus")
-    ap.add_argument("--target", default="claude", help="egress target name (claude at home)")
     ap.add_argument("--dry-run", action="store_true", help="screen and size the prompt, do not call the model")
     ap.add_argument("--claude-bin", default="claude")
     ns = ap.parse_args(argv)
@@ -117,7 +128,7 @@ def main(argv: list, cwd: Optional[str] = None, out=None) -> int:
         if not diff.strip():
             out.write(f"fresh-review: nothing to review ({base}...HEAD is empty)\n")
             return 0
-        held = egress_screen.screen_text(diff, ns.target, egress_screen.load_config(cwd))
+        held = egress_screen.screen_text(diff, TARGET, egress_screen.load_config(cwd))
         if held:
             out.write("fresh-review: diff held by the egress screen: " + ", ".join(held) + "\n")
             return 3
@@ -136,7 +147,9 @@ def main(argv: list, cwd: Optional[str] = None, out=None) -> int:
             "sha": head, "base": base, "base_sha": base_sha, "ts": started.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "model_requested": ns.model, "models": sorted(usage), "cost_usd": data.get("total_cost_usd"),
             "duration_ms": data.get("duration_ms"), "prompt_sha256": sha256(prompt), "diff_sha256": sha256(diff),
-            "prompt_file": os.path.relpath(PROMPT_PATH, cwd), "verdict": verdict["verdict"],
+            "prompt_file": os.path.relpath(PROMPT_PATH, cwd),
+            "verdict": effective_verdict(verdict["verdict"], verdict.get("findings", [])),
+            "verdict_as_answered": verdict["verdict"],
             "summary": verdict.get("summary", ""), "findings": verdict.get("findings", []),
         }
         rdir = os.path.join(git(["rev-parse", "--git-dir"], cwd).strip(), "fresh-review")

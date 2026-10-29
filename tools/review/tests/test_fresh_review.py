@@ -115,3 +115,17 @@ def test_malformed_model_answer_is_exit_2(review, tmp_path):
         assert review.main(["--base", "main", "--claude-bin", claude], cwd=str(r), out=out) == 2, bad
         assert "no usable structured verdict" in out.getvalue()
 
+
+def test_blocker_finding_overrides_a_softer_verdict(review, tmp_path):
+    r = repo_with_branch(tmp_path)
+    finding = {"severity": "BLOCKER", "file": "test_x.py", "line": 3, "summary": "weakened"}
+    claude, _ = fake_claude(tmp_path, {"verdict": "COMMENT", "summary": "s", "findings": [finding]})
+    out = io.StringIO()
+    assert review.main(["--base", "main", "--claude-bin", claude], cwd=str(r), out=out) == 1
+    assert out.getvalue().startswith("fresh-review: BLOCKER")
+    head = subprocess.run(["git", "-C", str(r), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    receipt = json.loads((r / ".git" / "fresh-review" / f"{head}.json").read_text())
+    assert receipt["verdict"] == "BLOCKER" and receipt["verdict_as_answered"] == "COMMENT"
+    assert review.effective_verdict("APPROVE", [{"severity": "MINOR"}]) == "COMMENT"
+    assert review.effective_verdict("APPROVE", []) == "APPROVE"
+
