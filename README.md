@@ -105,6 +105,27 @@ definition-of-ready fields.
 - `.githooks/commit-msg` (`core.hooksPath`, set by the installer) enforces
   `type(scope): imperative subject`, no closing keywords; CI re-checks the PR range.
 
+## Guards (hook feedback now, CI red later)
+
+- `tools/testguard/check-test-tampering.sh` (the harness kit's guard plus pytest rules):
+  deleted or renamed test files, a `def test_` that disappears, added skip/focus
+  markers, `[skip ci]` in commits or the PR title. The PostToolUse wrapper
+  `testguard.py hook` runs it against the working tree whenever a tool touches a
+  test file; the CI job `guards` runs it against the PR base. A removal passes only
+  with the human-applied `test-removal-ok` PR label.
+- `tools/scan/latest_tag.py`: `:latest` or untagged image references in Dockerfiles,
+  compose files and workflows (digests, build stages and `scratch` pass). `hook` judges
+  the file just written; `scan [PATH...]` walks the tracked tree in CI, exit 1 on findings.
+
+## Evidence pack
+
+- `tools/tracker/evidence_export.py capture --tag T --name N -- <command>` keeps a check's
+  output verbatim under `evidence/T/` with its sha256, size, exit code and tool version.
+- `evidence_export.py export --tag T --from <ref> --to <ref>` writes `change-records.json`
+  from `gh api`: PRs merged in the git range (merge SHAs, reviews, check runs), the
+  issues they reference or that closed in the window (tracker markers, acceptance boxes),
+  rulesets, the captures re-hashed, tool versions. `/validation-evidence` runs both.
+
 ## Memory and ledger (Claude Code, home machine)
 
 - `tools/memory/memstore.py init` puts `~/.claude/projects/*/memory/**` under a
@@ -113,7 +134,7 @@ definition-of-ready fields.
   for project/reference facts, `verified_on`). `index --write` rebuilds
   `MEMORY.md`, `triage` lists stale or unverified files, `deprecate` retires one.
   Push stays off until a private remote exists and `KZ_MEMORY_PUSH` names the projects.
-- `tools/telemetry/ledger.py hook` (SessionEnd) appends one line per session with
+- `tools/telemetry/ledger.py hook` (SessionEnd) writes one line per session id with
   per-model tokens and cost, subagent share and spawns; `ledger.py cost --days 7`
   prints the week per project and model plus hook prompts per guard rule.
   Prices live in `tools/telemetry/prices.json` (dated; unknown tiers stay `null`).
