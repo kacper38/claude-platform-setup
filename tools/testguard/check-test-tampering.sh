@@ -78,10 +78,22 @@ has_label() {
   return 2
 }
 
+# In --worktree mode `git diff` does not see untracked files: a new test file with a marker,
+# or a test moved into a file not yet added, would be missed. Emit a diff from nothing for each.
+untracked_test_diffs() {
+  [ "$WORKTREE" -eq 1 ] || return 0
+  git ls-files --others --exclude-standard -- '*.spec.*' '*.test.*' 'test_*.py' '*/test_*.py' '*_test.py' \
+    | while IFS= read -r f; do
+        [ -f "$f" ] && { git diff --no-index --unified=0 --no-color /dev/null "$f" || true; }
+      done
+  return 0
+}
+
 # --- 1. focus/skip markers ADDED in test files ------------------------------
 # shellcheck disable=SC2086
 added_markers="$(
-  git diff --unified=0 --no-color "$MB" $TO -- '*.spec.*' '*.test.*' 'test_*.py' '*/test_*.py' '*_test.py' \
+  { git diff --unified=0 --no-color "$MB" $TO -- '*.spec.*' '*.test.*' 'test_*.py' '*/test_*.py' '*_test.py'
+    untracked_test_diffs; } \
     | awk '
         /^\+\+\+ / { file = substr($0, 7); next }
         /^@@ /     { split($3, a, ","); line = substr(a[1], 2) + 0; next }
@@ -122,17 +134,10 @@ done < <(git diff --name-status --find-renames "$MB" $TO)
 # A `def test_*` that disappears from a test file and is not added back under the same name
 # anywhere in the diff (moving a test between files is fine). Files deleted outright are
 # reported by check 2, not here. In --worktree mode a test moved into a not-yet-added file
-# counts as added back.
-untracked_test_defs() {
-  [ "$WORKTREE" -eq 1 ] || return 0
-  git ls-files --others --exclude-standard -- 'test_*.py' '*/test_*.py' '*_test.py' | while IFS= read -r f; do
-    grep -E '^[ \t]*(async[ \t]+)?def[ \t]+test_[A-Za-z0-9_]*[ \t]*\(' "$f" 2>/dev/null | sed 's/^/+/' || true
-  done
-  return 0
-}
+# counts as added back (untracked_test_diffs).
 # shellcheck disable=SC2086
 removed_funcs="$(
-  { git diff --unified=0 --no-color "$MB" $TO -- 'test_*.py' '*/test_*.py' '*_test.py'; untracked_test_defs; } \
+  { git diff --unified=0 --no-color "$MB" $TO -- 'test_*.py' '*/test_*.py' '*_test.py'; untracked_test_diffs; } \
     | awk '
         /^--- /    { file = substr($0, 7); skip = 0; next }
         /^\+\+\+ / { if ($0 == "+++ /dev/null") skip = 1; next }
