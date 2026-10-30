@@ -1,0 +1,188 @@
+"""latest-tag scanner: floating image references in Dockerfiles, compose files and workflows (plan step 3.7)."""
+import importlib.util
+import io
+import json
+import pathlib
+import subprocess
+
+import pytest
+
+HERE = pathlib.Path(__file__).resolve().parent
+
+
+@pytest.fixture(scope="module")
+def lt():
+    spec = importlib.util.spec_from_file_location("latest_tag", HERE.parent / "latest_tag.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+@pytest.mark.parametrize("ref,expected", [
+    ("nginx", "none"), ("nginx:latest", "latest"), ("nginx:1.27", "tag"), ("localhost:5000/app", "none"),
+    ("localhost:5000/app:1.0", "tag"), ("ghcr.io/o/r@sha256:abc", "digest"), ("nginx:latest@sha256:abc", "digest"),
+    ("python:${PY}-slim", "tag"),
+])
+def test_tag_of(lt, ref, expected):
+    assert lt.tag_of(ref) == expected
+
+
+@pytest.mark.parametrize("path,kind", [
+    ("Dockerfile", "dockerfile"), ("svc/Dockerfile.prod", "dockerfile"), ("api.Dockerfile", "dockerfile"),
+    ("x/build.dockerfile", "dockerfile"), ("Containerfile", "dockerfile"), ("compose.yml", "yaml"),
+    ("deploy/docker-compose.override.yaml", "yaml"), (".github/workflows/ci.yml", "yaml"),
+    ("repo/.github/workflows/x.yaml", "yaml"), ("k8s/deploy.yaml", None), ("README.md", None),
+    ("Dockerfile.md", "dockerfile"), ("tools/guard/tests/fixtures/x.json", None),
+])
+def test_kind_of(lt, path, kind):
+    assert lt.kind_of(path) == kind
+
+
+DOCKERFILE = """\
+# syntax=docker/dockerfile:1
+ARG BASE=python:3.12-slim
+FROM --platform=$BUILDPLATFORM python:3.12-slim AS builder
+FROM ${BASE} AS deps
+FROM builder
+FROM scratch
+from nginx:latest
+FROM python
+FROM ghcr.io/o/app:1.2.3@sha256:0123
+FROM Builder AS again
+"""
+
+
+def test_scan_dockerfile(lt):
+    found = lt.scan_text(DOCKERFILE, "dockerfile")
+    assert [(n, r) for n, r, _ in found] == [(7, ":latest tag"), (8, "no tag (floats to :latest)")]
+    assert found[0][2] == "from nginx:latest"
+
+
+COMPOSE = """\
+services:
+  web:
+    image: nginx:latest
+  db:
+    image: "postgres"
+  app:
+    image: ${REGISTRY}/app:${TAG}
+  cache:
+    image: redis:7.4 # pinned
+  queue:
+    image: 'rabbitmq:3.13@sha256:abc'
+  tool:
+    image: {{ .Values.image }}
+"""
+WORKFLOW = """\
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: node:22
+    services:
+      pg:
+        image: postgres
+    steps:
+      - uses: actions/checkout@v6
+      - uses: docker://alpine
+      - uses: "docker://ghcr.io/o/tool:1.0"
+"""
+
+
+def test_scan_yaml(lt):
+    assert [(n, r) for n, r, _ in lt.scan_text(COMPOSE, "yaml")] == [(3, ":latest tag"),
+                                                                     (5, "no tag (floats to :latest)")]
+    assert [(n, r) for n, r, _ in lt.scan_text(WORKFLOW, "yaml")] == [(8, "no tag (floats to :latest)"),
+                                                                      (11, "no tag (floats to :latest)")]
+
+
+def git(cwd, *args):
+    r = subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+
+
+@pytest.fixture
+def repo(tmp_path):
+    git(tmp_path, "init", "-q", "-b", "main")
+    (tmp_path / "Dockerfile").write_text(DOCKERFILE)
+    (tmp_path / "deploy").mkdir()
+    (tmp_path / "deploy" / "compose.yml").write_text(COMPOSE)
+    (tmp_path / ".github" / "workflows").mkdir(parents=True)
+    (tmp_path / ".github" / "workflows" / "ci.yml").write_text(WORKFLOW)
+    # not one of the kinds: scanned only when named
+    (tmp_path / "k8s.yaml").write_text("spec:\n  containers:\n    - image: busybox\n")
+    git(tmp_path, "add", ".")
+    return tmp_path
+
+
+def run(lt, argv, cwd):
+    out, err = io.StringIO(), io.StringIO()
+    code = lt.main(argv, out=out, err=err, stdin=io.StringIO("")) if cwd is None else None
+    if cwd is not None:
+        r = subprocess.run([__import__("sys").executable, str(HERE.parent / "latest_tag.py"), *argv], cwd=cwd,
+                           capture_output=True, text=True)
+        return r.returncode, r.stdout, r.stderr
+    return code, out.getvalue(), err.getvalue()
+
+
+def test_scan_repo_default_tree_and_named_paths(lt, repo):
+    code, out, err = run(lt, ["scan"], repo)
+    assert code == 1
+    lines = out.splitlines()
+    assert "Dockerfile:7: :latest tag: from nginx:latest" in lines
+    assert "deploy/compose.yml:5: no tag (floats to :latest): image: \"postgres\"" in lines
+    assert ".github/workflows/ci.yml:11: no tag (floats to :latest): - uses: docker://alpine" in lines
+    assert not any(ln.startswith("k8s.yaml") for ln in lines)
+    assert len(lines) == 6 and "6 finding(s) in 3 file(s)" in err
+    code, out, err = run(lt, ["scan", "k8s.yaml"], repo)  # a named file is read whatever its name
+    assert code == 1 and out.splitlines() == ["k8s.yaml:3: no tag (floats to :latest): - image: busybox"]
+    code, out, _ = run(lt, ["scan", "deploy"], repo)
+    assert code == 1 and all(ln.startswith("deploy/compose.yml") for ln in out.splitlines())
+
+
+def test_scan_clean_tree_and_no_repo(lt, tmp_path):
+    git(tmp_path, "init", "-q", "-b", "main")
+    (tmp_path / "Dockerfile").write_text("FROM python:3.12-slim@sha256:abc AS b\nFROM b\n")
+    git(tmp_path, "add", ".")
+    code, out, err = run(lt, ["scan"], tmp_path)
+    assert (code, out) == (0, "") and "0 finding(s) in 1 file(s)" in err
+    plain = tmp_path / "plain"
+    plain.mkdir()
+    code, out, err = run(lt, ["scan"], plain)
+    assert code == 2 and "nothing to scan" in err
+    assert run(lt, ["help"], plain)[0] == 0 and run(lt, ["bogus"], plain)[0] == 1
+
+
+def hook(lt, payload):
+    out = io.StringIO()
+    code = lt.main(["hook"], stdin=io.StringIO(payload if isinstance(payload, str) else json.dumps(payload)), out=out)
+    return code, out.getvalue()
+
+
+def test_hook_feedback_in_both_shapes(lt, tmp_path):
+    df = tmp_path / "Dockerfile"
+    df.write_text("FROM nginx:latest\n")
+    code, out = hook(lt, {"hook_event_name": "PostToolUse", "session_id": "s1", "tool_name": "Write",
+                          "tool_input": {"file_path": str(df), "content": "FROM nginx:latest\n"}})
+    data = json.loads(out)
+    assert code == 0 and data["decision"] == "block"
+    assert "Dockerfile:1: :latest tag: FROM nginx:latest" in data["reason"] and "How:" in data["reason"]
+    cf = tmp_path / "compose.yaml"
+    cf.write_text("services:\n  web:\n    image: nginx:latest\n")
+    code, out = hook(lt, {"hook_event_name": "PostToolUse", "timestamp": "2026-10-29T10:00:00.000Z",
+                          "tool_name": "create", "tool_input": {"path": str(cf), "file_text": "x"}})
+    data = json.loads(out)
+    assert code == 0 and set(data) == {"additionalContext"} and "image: nginx:latest" in data["additionalContext"]
+
+
+def test_hook_is_silent_when_nothing_applies(lt, tmp_path):
+    df = tmp_path / "Dockerfile"
+    df.write_text("FROM python:3.12-slim\n")
+    assert hook(lt, {"tool_name": "Write", "tool_input": {"file_path": str(df)}}) == (0, "")
+    md = tmp_path / "notes.md"
+    md.write_text("image: nginx:latest\n")
+    assert hook(lt, {"tool_name": "Write", "tool_input": {"file_path": str(md)}}) == (0, "")
+    missing = str(tmp_path / "missing" / "Dockerfile")
+    assert hook(lt, {"tool_name": "Write", "tool_input": {"file_path": missing}}) == (0, "")
+    assert hook(lt, {"tool_name": "Bash", "tool_input": {"command": "cat Dockerfile"}}) == (0, "")
+    assert hook(lt, "{{{") == (0, "") and hook(lt, "[1]") == (0, "")
