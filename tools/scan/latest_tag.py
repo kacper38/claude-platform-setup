@@ -27,7 +27,7 @@ _DOCKERFILE_RE = re.compile(r"^(Dockerfile(\..+)?|.+\.[Dd]ockerfile|Containerfil
 _COMPOSE_RE = re.compile(r"^(docker-)?compose[^/]*\.ya?ml$")
 _WORKFLOW_RE = re.compile(r"(^|/)\.github/workflows/[^/]+\.ya?ml$")
 _FROM_RE = re.compile(r"^\s*FROM\s+(.+?)\s*$", re.IGNORECASE)
-_IMAGE_RE = re.compile(r"^\s*-?\s*image\s*:\s*(.+?)\s*$")
+_IMAGE_RE = re.compile(r"^\s*-?\s*(image|container)\s*:\s*(.+?)\s*$")  # `container: ubuntu` is the scalar short form
 _USES_DOCKER_RE = re.compile(r"^\s*-?\s*uses\s*:\s*[\"']?docker://(.+?)[\"']?\s*$")
 WHY = "image tags are the git SHA, never latest (AGENTS.md, security reflexes)"
 HOW = "pin a tag (and a digest where the registry is not yours); a stage name or scratch is fine in FROM"
@@ -88,14 +88,15 @@ def scan_text(text: str, kind: str) -> list:
             if not tokens:
                 continue
             ref = tokens[0]
+            known_stage = ref.lower() == "scratch" or ref.lower() in stages
             if len(tokens) >= 3 and tokens[1].lower() == "as":
-                stages.add(tokens[2].lower())
-            if ref.lower() == "scratch" or ref.lower() in stages:
+                stages.add(tokens[2].lower())  # after the check: `FROM nginx AS nginx` must still be judged
+            if known_stage:
                 continue
         else:
             m = _IMAGE_RE.match(line)
             if m:
-                ref = _yaml_value(m.group(1))
+                ref = _yaml_value(m.group(2))
             else:
                 m = _USES_DOCKER_RE.match(line)
                 if not m:
@@ -126,11 +127,11 @@ def tracked_files(root: str) -> list:
     return [p for p in r.stdout.split("\0") if p]
 
 
-def candidates(paths: list, root: str) -> list:
-    """[(path, kind)] to scan: named files by extension, directories and the git tree by file name."""
-    out = []
+def candidates(paths: list, root: str) -> tuple:
+    """([(path, kind)], [missing]): named files by extension, directories and the git tree by file name."""
+    out, missing = [], []
     if not paths:
-        return [(p, k) for p in tracked_files(root) for k in [kind_of(p)] if k]
+        return [(p, k) for p in tracked_files(root) for k in [kind_of(p)] if k], missing
     for p in paths:
         if os.path.isdir(p):
             for dirpath, dirnames, filenames in os.walk(p):
@@ -142,11 +143,16 @@ def candidates(paths: list, root: str) -> list:
                         out.append((full, k))
         elif os.path.isfile(p):
             out.append((p, "yaml" if p.lower().endswith((".yml", ".yaml")) else "dockerfile"))
-    return out
+        else:
+            missing.append(p)
+    return out, missing
 
 
 def cmd_scan(paths: list, out, err, root: str = ".") -> int:
-    files = candidates(paths, root)
+    files, missing = candidates(paths, root)
+    if missing:
+        err.write("latest-tag: cannot read " + ", ".join(missing) + "\n")
+        return 2
     if not files and not paths:
         err.write("latest-tag: nothing to scan (not a git repository? name the paths)\n")
         return 2
@@ -164,6 +170,16 @@ def is_copilot(raw: dict) -> bool:
     return "timestamp" in raw or "toolName" in raw or "toolArgs" in raw
 
 
+def tool_args(raw: dict) -> dict:
+    """tool_input (Claude Code, VS Code format) or toolArgs (Copilot CLI), which may arrive JSON-encoded."""
+    args = raw.get("tool_input") if "tool_input" in raw else raw.get("toolArgs")
+    if isinstance(args, str):
+        try:
+            args = json.loads(args)
+        except ValueError:
+            args = {}
+    return args if isinstance(args, dict) else {}
+
 def feedback(findings: list, copilot: bool) -> dict:
     lines = [f"  {os.path.basename(path)}:{n}: {reason}: {line}" for path, n, reason, line in findings[:20]]
     msg = f"latest-tag: {WHY}:\n" + "\n".join(lines) + f"\n  How: {HOW}"
@@ -179,8 +195,7 @@ def hook(stdin, out) -> int:
         return 0
     if not isinstance(raw, dict):
         return 0
-    args = raw.get("tool_input") if "tool_input" in raw else raw.get("toolArgs")
-    args = args if isinstance(args, dict) else {}
+    args = tool_args(raw)
     path = next((args[k] for k in ("file_path", "path", "filePath") if isinstance(args.get(k), str)), "")
     kind = kind_of(path) if path else None
     if not kind:
