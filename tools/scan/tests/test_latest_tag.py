@@ -49,13 +49,17 @@ from nginx:latest
 FROM python
 FROM ghcr.io/o/app:1.2.3@sha256:0123
 FROM Builder AS again
+FROM nginx AS nginx
+FROM nginx
 """
 
 
 def test_scan_dockerfile(lt):
     found = lt.scan_text(DOCKERFILE, "dockerfile")
-    assert [(n, r) for n, r, _ in found] == [(7, ":latest tag"), (8, "no tag (floats to :latest)")]
+    assert [(n, r) for n, r, _ in found] == [(7, ":latest tag"), (8, "no tag (floats to :latest)"),
+                                             (11, "no tag (floats to :latest)")]
     assert found[0][2] == "from nginx:latest"
+    assert found[2][2] == "FROM nginx AS nginx", "aliasing an image to its own name does not make it a stage"
 
 
 COMPOSE = """\
@@ -86,6 +90,10 @@ jobs:
       - uses: actions/checkout@v6
       - uses: docker://alpine
       - uses: "docker://ghcr.io/o/tool:1.0"
+  short:
+    container: ubuntu
+  pinned:
+    container: ubuntu:24.04
 """
 
 
@@ -93,7 +101,8 @@ def test_scan_yaml(lt):
     assert [(n, r) for n, r, _ in lt.scan_text(COMPOSE, "yaml")] == [(3, ":latest tag"),
                                                                      (5, "no tag (floats to :latest)")]
     assert [(n, r) for n, r, _ in lt.scan_text(WORKFLOW, "yaml")] == [(8, "no tag (floats to :latest)"),
-                                                                      (11, "no tag (floats to :latest)")]
+                                                                      (11, "no tag (floats to :latest)"),
+                                                                      (14, "no tag (floats to :latest)")]
 
 
 def git(cwd, *args):
@@ -133,7 +142,9 @@ def test_scan_repo_default_tree_and_named_paths(lt, repo):
     assert "deploy/compose.yml:5: no tag (floats to :latest): image: \"postgres\"" in lines
     assert ".github/workflows/ci.yml:11: no tag (floats to :latest): - uses: docker://alpine" in lines
     assert not any(ln.startswith("k8s.yaml") for ln in lines)
-    assert len(lines) == 6 and "6 finding(s) in 3 file(s)" in err
+    assert len(lines) == 8 and "8 finding(s) in 3 file(s)" in err
+    code, out, err = run(lt, ["scan", "typo.yml", "deploy"], repo)
+    assert code == 2 and out == "" and "cannot read typo.yml" in err, "a missing named path is not a green scan"
     code, out, err = run(lt, ["scan", "k8s.yaml"], repo)  # a named file is read whatever its name
     assert code == 1 and out.splitlines() == ["k8s.yaml:3: no tag (floats to :latest): - image: busybox"]
     code, out, _ = run(lt, ["scan", "deploy"], repo)
@@ -173,6 +184,10 @@ def test_hook_feedback_in_both_shapes(lt, tmp_path):
                           "tool_name": "create", "tool_input": {"path": str(cf), "file_text": "x"}})
     data = json.loads(out)
     assert code == 0 and set(data) == {"additionalContext"} and "image: nginx:latest" in data["additionalContext"]
+    cli = {"hookEventName": "postToolUse", "sessionId": "c2", "timestamp": 1761732000000, "toolName": "create",
+           "toolArgs": json.dumps({"path": str(df), "file_text": "x"})}  # Copilot CLI: toolArgs JSON-encoded
+    code, out = hook(lt, cli)
+    assert code == 0 and "FROM nginx:latest" in json.loads(out)["additionalContext"]
 
 
 def test_hook_is_silent_when_nothing_applies(lt, tmp_path):
@@ -186,3 +201,4 @@ def test_hook_is_silent_when_nothing_applies(lt, tmp_path):
     assert hook(lt, {"tool_name": "Write", "tool_input": {"file_path": missing}}) == (0, "")
     assert hook(lt, {"tool_name": "Bash", "tool_input": {"command": "cat Dockerfile"}}) == (0, "")
     assert hook(lt, "{{{") == (0, "") and hook(lt, "[1]") == (0, "")
+    assert hook(lt, {"toolName": "create", "toolArgs": "not json", "timestamp": 1}) == (0, "")
