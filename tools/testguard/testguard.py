@@ -30,6 +30,16 @@ def is_copilot(raw: dict) -> bool:
     return "timestamp" in raw or "toolName" in raw or "toolArgs" in raw
 
 
+def tool_args(raw: dict) -> dict:
+    """tool_input (Claude Code, VS Code format) or toolArgs (Copilot CLI), which may arrive JSON-encoded."""
+    args = raw.get("tool_input") if "tool_input" in raw else raw.get("toolArgs")
+    if isinstance(args, str):
+        try:
+            args = json.loads(args)
+        except ValueError:
+            args = {}
+    return args if isinstance(args, dict) else {}
+
 def touches_tests(path: str, command: str) -> bool:
     if path and _TEST_FILE_RE.search(path.replace("\\", "/")):
         return True
@@ -61,8 +71,7 @@ def hook(stdin, out) -> int:
         return 0
     if not isinstance(raw, dict):
         return 0
-    args = raw.get("tool_input") if "tool_input" in raw else raw.get("toolArgs")
-    args = args if isinstance(args, dict) else {}
+    args = tool_args(raw)
     path = next((args[k] for k in ("file_path", "path", "filePath", "notebook_path") if isinstance(args.get(k), str)),
                 "")
     command = args.get("command") if isinstance(args.get("command"), str) else ""

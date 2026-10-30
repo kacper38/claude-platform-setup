@@ -114,6 +114,11 @@ def test_added_markers_fail_but_conditional_skips_pass(repo):
     write(repo, "src/x.test.ts", ONLY)
     code, err = run(repo, "--worktree")
     assert code == 1 and "src/x.test.ts:1: " + ONLY.strip() in err
+    write(repo, "src/x.test.ts", "it('works', () => {});\n")
+    write(repo, "tests/test_new.py", "import pytest\n" + SKIP + "\ndef test_new():\n    pass\n")  # untracked
+    code, err = run(repo, "--worktree")
+    assert code == 1 and "tests/test_new.py:2: " + SKIP in err, "an untracked test file is judged in worktree mode"
+    assert run(repo) == (0, ""), "committed mode never sees untracked files; CI judges after the commit"
 
 
 def test_deleted_test_file_needs_the_label(repo):
@@ -179,6 +184,11 @@ def test_hook_feeds_findings_back_in_both_shapes(tg, repo):
     code, out = hook(tg, copilot)
     data = json.loads(out)
     assert code == 0 and set(data) == {"additionalContext"} and "test_two" in data["additionalContext"]
+    cli = {"hookEventName": "postToolUse", "sessionId": "c2", "timestamp": 1761732000000, "toolName": "edit",
+           "cwd": str(repo), "toolArgs": json.dumps({"path": str(repo / "tests" / "test_a.py")})}  # JSON-encoded
+    code, out = hook(tg, cli)
+    data = json.loads(out)
+    assert code == 0 and set(data) == {"additionalContext"} and "test_two" in data["additionalContext"]
     (repo / "tests" / "test_a.py").unlink()
     bash = {"hook_event_name": "PostToolUse", "session_id": "s1", "cwd": str(repo), "tool_name": "Bash",
             "tool_input": {"command": "rm tests/test_a.py"}}
@@ -198,5 +208,7 @@ def test_hook_is_silent_when_nothing_applies(tg, repo, tmp_path):
                      "tool_input": {"file_path": str(outside / "test_z.py")}}) == (0, "")
     assert hook(tg, "{{{") == (0, "")
     assert hook(tg, "[1, 2]") == (0, "")
+    assert hook(tg, {"toolName": "edit", "toolArgs": "not json", "timestamp": 1}) == (0, "")
+    assert hook(tg, {"toolName": "edit", "toolArgs": "[1]", "timestamp": 1}) == (0, "")
     assert tg.main(["help"], stdin=io.StringIO(""), out=io.StringIO()) == 0
     assert tg.main(["bogus"], stdin=io.StringIO(""), out=io.StringIO()) == 1
