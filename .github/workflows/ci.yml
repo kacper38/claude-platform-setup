@@ -3,6 +3,9 @@ on:
   push:
     branches: [main]
   pull_request:
+    # labeled/unlabeled: the guards read PR labels from the event payload, and a re-run keeps the
+    # old payload, so applying test-removal-ok must start a fresh run
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 permissions:
   contents: read
 jobs:
