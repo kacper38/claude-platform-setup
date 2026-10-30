@@ -23,6 +23,12 @@
             "command": "python3 \"${CLAUDE_PROJECT_DIR:-.}\"/tools/memory/memstore.py hook",
             "timeout": 10,
             "statusMessage": "memstore"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR:-.}\"/tools/scan/latest_tag.py hook",
+            "timeout": 5,
+            "statusMessage": "latest-tag"
           }
         ]
       },
