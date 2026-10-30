@@ -52,20 +52,40 @@ jobs:
       - name: commit messages in the PR range
         run: python3 tools/commit_msg.py --range "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
 
+  guards:
+    name: guards (test tampering, image tags)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - name: test-tampering guard (diff vs the PR base; a push to main has nothing on top of it)
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          # the script reads labels from this list; an unlabeled PR must not fall back to gh (no token here)
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') || 'none' }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: bash tools/testguard/check-test-tampering.sh
+      - name: image tags never float (latest-tag scanner over the tracked tree)
+        run: python3 tools/scan/latest_tag.py scan
+
   ci:
     name: ci
     if: always()
-    needs: [test, commit-msg]
+    needs: [test, commit-msg, guards]
     runs-on: ubuntu-latest
     steps:
       - name: every needed job succeeded (a skipped job is not green; GitHub would count it as passing)
         env:
           TEST: ${{ needs.test.result }}
           COMMIT_MSG: ${{ needs.commit-msg.result }}
+          GUARDS: ${{ needs.guards.result }}
           EVENT: ${{ github.event_name }}
         run: |
-          echo "test=$TEST commit-msg=$COMMIT_MSG event=$EVENT"
+          echo "test=$TEST commit-msg=$COMMIT_MSG guards=$GUARDS event=$EVENT"
           [ "$TEST" = "success" ] || { echo "test did not succeed"; exit 1; }
+          [ "$GUARDS" = "success" ] || { echo "guards did not succeed"; exit 1; }
           if [ "$EVENT" = "pull_request" ]; then
             [ "$COMMIT_MSG" = "success" ] || { echo "commit-msg did not succeed"; exit 1; }
           else
