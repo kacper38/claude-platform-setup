@@ -95,6 +95,42 @@ def test_hook_appends_monthly_file_and_never_fails(ledger, tmp_path, tdir):
     assert len(rows) == 2 and rows[1]["parse_errors"] >= 1 and rows[1]["models"] == {}
 
 
+def test_hook_writes_one_line_per_session_id(ledger, tmp_path, tdir):
+    main = write_transcript(tmp_path)
+    raw = json.dumps({"session_id": "s1", "transcript_path": str(main), "cwd": "/Users/t/x", "reason": "exit"})
+    for _ in range(2):  # the project hook and the user hook fire on the same SessionEnd
+        assert ledger.main(["hook"], stdin=io.StringIO(raw), out=io.StringIO(), err=io.StringIO()) == 0
+    path = tdir / os.listdir(tdir)[0]
+    rows = [json.loads(ln) for ln in path.read_text().splitlines()]
+    assert len(os.listdir(tdir)) == 1 and [r["session"] for r in rows] == ["s1"]
+    assert rows[0]["models"]["claude-fable-5-1"]["turns"] == 4
+    with open(main, "a", encoding="utf-8") as fh:  # the session is resumed and ends again: cumulative, one line
+        fh.write(line("claude-fable-5-1", 7, 7, req="r9") + "\n")
+    assert ledger.main(["hook"], stdin=io.StringIO(raw), out=io.StringIO(), err=io.StringIO()) == 0
+    rows = [json.loads(ln) for ln in path.read_text().splitlines()]
+    assert [r["session"] for r in rows] == ["s1"] and rows[0]["models"]["claude-fable-5-1"]["turns"] == 5
+    other = json.dumps({"session_id": "s2", "transcript_path": str(main), "cwd": "/Users/t/x", "reason": "exit"})
+    assert ledger.main(["hook"], stdin=io.StringIO(other), out=io.StringIO(), err=io.StringIO()) == 0
+    rows = [json.loads(ln) for ln in path.read_text().splitlines()]
+    assert [r["session"] for r in rows] == ["s1", "s2"], "another session is another line, order kept"
+    assert ledger.main(["hook"], stdin=io.StringIO(raw), out=io.StringIO(), err=io.StringIO()) == 0
+    rows = [json.loads(ln) for ln in path.read_text().splitlines()]
+    assert [r["session"] for r in rows] == ["s2", "s1"], "the replaced line moves to the end: last end wins"
+
+
+def test_load_sessions_keeps_the_last_row_per_session_across_files(ledger, tdir):
+    tdir.mkdir()
+    row = {"session": "dup", "project": "/p", "models": {}, "spawns": [], "subagents": {}}
+    (tdir / "sessions-2026-09.jsonl").write_text(json.dumps({**row, "ts": "2026-09-30T23:59:00Z", "n": 1}) + "\n")
+    (tdir / "sessions-2026-10.jsonl").write_text("\n".join([
+        json.dumps({**row, "ts": "2026-10-01T00:10:00Z", "n": 2}),
+        json.dumps({**row, "session": "", "ts": "2026-10-01T00:11:00Z", "n": 3}),
+        json.dumps({**row, "session": "", "ts": "2026-10-01T00:12:00Z", "n": 4}),
+    ]) + "\n")
+    rows = ledger.load_sessions(str(tdir), dt.datetime(2026, 9, 1, tzinfo=dt.timezone.utc))
+    assert sorted(r["n"] for r in rows) == [2, 3, 4], "one row for `dup` (the later one); id-less rows all stay"
+
+
 def test_hook_writes_nothing_for_copilot_or_without_transcript(ledger, tdir):
     for raw in ({"timestamp": "2026-10-29T10:00:00Z", "session_id": "c1", "transcript_path": "/x.jsonl"},
                 {"session_id": "s2", "cwd": "/Users/t/x", "reason": "exit"}):
