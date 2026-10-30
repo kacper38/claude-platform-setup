@@ -2,9 +2,12 @@
 """ledger — SessionEnd token ledger and cost report (plan step 3.6; Claude Code only).
 
   ledger.py hook                 SessionEnd: read the transcript (and its subagent transcripts), join the spawn
-                                 log, price with prices.json, append one line to <telemetry>/sessions-YYYY-MM.jsonl.
-                                 Always exit 0; problems land in the line as parse_errors. Copilot payloads
-                                 and payloads without transcript_path write nothing.
+                                 log, price with prices.json, write one line per session id to
+                                 <telemetry>/sessions-YYYY-MM.jsonl (an earlier line for the same session is
+                                 replaced: the project and user hooks of one SessionEnd leave one line, and a
+                                 resumed session carries cumulative figures). Always exit 0; problems land in
+                                 the line as parse_errors. Copilot payloads and payloads without
+                                 transcript_path write nothing.
   ledger.py cost [--days 7]      per project and model: tokens, cost, spawns, subagent share (> 70 % flagged),
                                  and hook prompts per rule from <telemetry>/decisions.jsonl.
 Telemetry dir: KZ_TELEMETRY_DIR or ~/.claude/telemetry.
@@ -16,6 +19,11 @@ import json
 import os
 import sys
 from typing import Optional
+
+try:
+    import fcntl
+except ImportError:  # Windows: no lock, the reader still keeps one row per session
+    fcntl = None
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PRICES_PATH = os.path.join(HERE, "prices.json")
@@ -157,11 +165,40 @@ def build_entry(raw: dict, tdir: str, prices: dict, now: Optional[_dt.datetime] 
 
 
 def append_entry(entry: dict, tdir: str) -> str:
+    """One line per session id in the month file: an earlier line for the same session is dropped first.
+    Read and write happen under a lock on the file itself (same inode, no rename), so the project hook and
+    the user hook of one SessionEnd serialise instead of both appending."""
     os.makedirs(tdir, exist_ok=True)
     path = os.path.join(tdir, f"sessions-{entry['ts'][:7]}.jsonl")
-    with open(path, "a", encoding="utf-8") as fh:
-        fh.write(json.dumps(entry, sort_keys=True) + "\n")
+    line = json.dumps(entry, sort_keys=True) + "\n"
+    fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o644)
+    with os.fdopen(fd, "r+", encoding="utf-8", errors="replace") as fh:
+        if fcntl is not None:
+            fcntl.flock(fh, fcntl.LOCK_EX)
+        try:
+            existing = fh.read().splitlines(keepends=True)
+            kept = [ln for ln in existing if not _same_session(ln, entry["session"])]
+            if len(kept) != len(existing):
+                fh.seek(0)
+                fh.truncate()
+                fh.write("".join(ln if ln.endswith("\n") else ln + "\n" for ln in kept))
+            fh.seek(0, os.SEEK_END)
+            fh.write(line)
+            fh.flush()
+        finally:
+            if fcntl is not None:
+                fcntl.flock(fh, fcntl.LOCK_UN)
     return path
+
+
+def _same_session(line: str, session: str) -> bool:
+    if not session:
+        return False
+    try:
+        row = json.loads(line)
+    except ValueError:
+        return False
+    return isinstance(row, dict) and row.get("session") == session
 
 
 def cmd_hook(stdin, tdir: str, err) -> int:
@@ -189,7 +226,9 @@ def cmd_hook(stdin, tdir: str, err) -> int:
 
 
 def load_sessions(tdir: str, since: _dt.datetime) -> list:
+    """Rows since `since`; one per session id, the last written wins (a session may end in two month files)."""
     rows = []
+    by_session: dict = {}
     for path in sorted(glob.glob(os.path.join(tdir, "sessions-*.jsonl"))):
         with open(path, encoding="utf-8") as fh:
             for line in fh:
@@ -201,9 +240,13 @@ def load_sessions(tdir: str, since: _dt.datetime) -> list:
                     ts = _dt.datetime.strptime(row.get("ts", ""), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=_dt.timezone.utc)
                 except ValueError:
                     continue
-                if ts >= since:
+                if ts < since:
+                    continue
+                if row.get("session"):
+                    by_session[row["session"]] = row
+                else:
                     rows.append(row)
-    return rows
+    return rows + list(by_session.values())
 
 
 def load_decisions(tdir: str, since: _dt.datetime) -> dict:
