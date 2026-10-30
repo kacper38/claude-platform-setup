@@ -20,13 +20,19 @@ No paperwork theater: everything here is generated from real artifacts.
    | REQ-01 short name | `path/file.py` @ `abc123` | `tests/test_x.py::test_y` | run output ref |
 
    Requirements with no test row are findings, not omissions to hide.
-3. **Capture check outputs.** Run and save verbatim into `evidence/<tag>/`:
+3. **Capture check outputs.** Run and save verbatim into `evidence/<tag>/`, through
+   `tools/tracker/evidence_export.py capture --tag <tag> --name <check> -- <command>` where the
+   kit is installed (it records sha256, size, exit code and the tool's `--version` per output in
+   `captures.json`):
    test run (`pytest -q` / `npm test`), lint (`ruff` / `eslint` +
    `tsc --noEmit`), `docker build` digest (+ `next build` where applicable),
    `terraform plan` summary, image SHA + registry digest, vulnerability scan
    report (trivy / pip-audit / npm audit), SBOM where configured
    (`syft <image> -o spdx-json`), eval report if AI-touching.
-4. **Change control trail.** `git log --oneline` for the scope, PR links +
+4. **Change control trail.** `evidence_export.py export --tag <tag> --from <prev-tag> --to <tag>`
+   writes `change-records.json` (PRs merged in the range with merge SHAs, reviewers and check runs,
+   the issues they reference and those closed in the window, rulesets, captures re-hashed).
+   Add `git log --oneline` for the scope, PR links +
    approvers, deployment approval records (environment protection), and
    DECISIONS.md entries relevant to this unit.
 5. **System description.** Confirm `docs/SYSTEM.md` still matches reality

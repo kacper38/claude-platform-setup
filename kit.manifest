@@ -11,6 +11,7 @@ managed tools/guard/guard.py
 managed tools/tracker/tracker.py
 managed tools/tracker/label_lint.py
 managed tools/tracker/session_start.py
+managed tools/tracker/evidence_export.py
 managed tools/commit_msg.py
 managed .githooks/commit-msg
 managed tools/egress/egress_screen.py
