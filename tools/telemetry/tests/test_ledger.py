@@ -82,7 +82,7 @@ def test_hook_appends_monthly_file_and_never_fails(ledger, tmp_path, tdir):
     raw = json.dumps({"session_id": "s1", "transcript_path": str(main), "cwd": "/Users/t/x", "reason": "exit"})
     err = io.StringIO()
     assert ledger.main(["hook"], stdin=io.StringIO(raw), out=io.StringIO(), err=err) == 0
-    files = os.listdir(tdir)
+    files = sorted(f for f in os.listdir(tdir) if not f.startswith("."))  # the lock file is a dotfile
     assert len(files) == 1 and files[0].startswith("sessions-") and files[0].endswith(".jsonl")
     row = json.loads((tdir / files[0]).read_text().splitlines()[0])
     assert row["session"] == "s1"
@@ -100,9 +100,10 @@ def test_hook_writes_one_line_per_session_id(ledger, tmp_path, tdir):
     raw = json.dumps({"session_id": "s1", "transcript_path": str(main), "cwd": "/Users/t/x", "reason": "exit"})
     for _ in range(2):  # the project hook and the user hook fire on the same SessionEnd
         assert ledger.main(["hook"], stdin=io.StringIO(raw), out=io.StringIO(), err=io.StringIO()) == 0
-    path = tdir / os.listdir(tdir)[0]
+    files = sorted(f for f in os.listdir(tdir) if not f.startswith("."))
+    path = tdir / files[0]
     rows = [json.loads(ln) for ln in path.read_text().splitlines()]
-    assert len(os.listdir(tdir)) == 1 and [r["session"] for r in rows] == ["s1"]
+    assert len(files) == 1 and [r["session"] for r in rows] == ["s1"]
     assert rows[0]["models"]["claude-fable-5-1"]["turns"] == 4
     with open(main, "a", encoding="utf-8") as fh:  # the session is resumed and ends again: cumulative, one line
         fh.write(line("claude-fable-5-1", 7, 7, req="r9") + "\n")
@@ -116,6 +117,11 @@ def test_hook_writes_one_line_per_session_id(ledger, tmp_path, tdir):
     assert ledger.main(["hook"], stdin=io.StringIO(raw), out=io.StringIO(), err=io.StringIO()) == 0
     rows = [json.loads(ln) for ln in path.read_text().splitlines()]
     assert [r["session"] for r in rows] == ["s2", "s1"], "the replaced line moves to the end: last end wins"
+    raw_bytes = b'{"session": "s0", "ts": "2026-10-29T00:00:00Z", "note": "caf\xe9"}\n'  # not UTF-8: kept as is
+    with open(path, "ab") as fh:
+        fh.write(raw_bytes)
+    assert ledger.main(["hook"], stdin=io.StringIO(raw), out=io.StringIO(), err=io.StringIO()) == 0
+    assert raw_bytes in path.read_bytes() and not os.path.exists(str(path) + ".tmp")
 
 
 def test_load_sessions_keeps_the_last_row_per_session_across_files(ledger, tdir):
@@ -142,7 +148,8 @@ def test_hook_writes_an_error_line_when_the_builder_raises(ledger, tdir, monkeyp
     monkeypatch.setattr(ledger, "build_entry", lambda *a, **k: (_ for _ in ()).throw(KeyError("boom")))
     raw = json.dumps({"session_id": "s9", "transcript_path": "/x.jsonl", "cwd": "/Users/t/x"})
     assert ledger.main(["hook"], stdin=io.StringIO(raw), out=io.StringIO(), err=io.StringIO()) == 0
-    row = json.loads((tdir / os.listdir(tdir)[0]).read_text().splitlines()[0])
+    month = next(f for f in os.listdir(tdir) if f.startswith("sessions-"))
+    row = json.loads((tdir / month).read_text().splitlines()[0])
     assert row["session"] == "s9" and row["parse_errors"] == 1 and row["error"].startswith("KeyError")
 
 

@@ -28,6 +28,7 @@ except ImportError:  # Windows: no lock, the reader still keeps one row per sess
 HERE = os.path.dirname(os.path.abspath(__file__))
 PRICES_PATH = os.path.join(HERE, "prices.json")
 SUBAGENT_SHARE_FLAG = 0.70
+LOCK_FILE = ".ledger.lock"
 
 
 def telemetry_dir() -> str:
@@ -166,36 +167,42 @@ def build_entry(raw: dict, tdir: str, prices: dict, now: Optional[_dt.datetime] 
 
 def append_entry(entry: dict, tdir: str) -> str:
     """One line per session id in the month file: an earlier line for the same session is dropped first.
-    Read and write happen under a lock on the file itself (same inode, no rename), so the project hook and
-    the user hook of one SessionEnd serialise instead of both appending."""
+    The check and the write happen under a lock file, so the project hook and the user hook of one
+    SessionEnd serialise; a rewrite goes through a temp file and os.replace, so a crash leaves the old
+    file or the new one, never a torn one."""
     os.makedirs(tdir, exist_ok=True)
     path = os.path.join(tdir, f"sessions-{entry['ts'][:7]}.jsonl")
-    line = json.dumps(entry, sort_keys=True) + "\n"
-    fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o644)
-    with os.fdopen(fd, "r+", encoding="utf-8", errors="replace") as fh:
+    line = (json.dumps(entry, sort_keys=True) + "\n").encode("utf-8")
+    with open(os.path.join(tdir, LOCK_FILE), "a+b") as lock:
         if fcntl is not None:
-            fcntl.flock(fh, fcntl.LOCK_EX)
+            fcntl.flock(lock, fcntl.LOCK_EX)
         try:
-            existing = fh.read().splitlines(keepends=True)
+            existing = []
+            if os.path.exists(path):
+                with open(path, "rb") as fh:
+                    existing = fh.read().splitlines(keepends=True)
             kept = [ln for ln in existing if not _same_session(ln, entry["session"])]
-            if len(kept) != len(existing):
-                fh.seek(0)
-                fh.truncate()
-                fh.write("".join(ln if ln.endswith("\n") else ln + "\n" for ln in kept))
-            fh.seek(0, os.SEEK_END)
-            fh.write(line)
-            fh.flush()
+            if len(kept) == len(existing):
+                with open(path, "ab") as fh:
+                    fh.write(line)
+            else:
+                tmp = path + ".tmp"
+                with open(tmp, "wb") as fh:
+                    fh.write(b"".join(ln if ln.endswith(b"\n") else ln + b"\n" for ln in kept) + line)
+                    fh.flush()
+                    os.fsync(fh.fileno())
+                os.replace(tmp, path)
         finally:
             if fcntl is not None:
-                fcntl.flock(fh, fcntl.LOCK_UN)
+                fcntl.flock(lock, fcntl.LOCK_UN)
     return path
 
 
-def _same_session(line: str, session: str) -> bool:
+def _same_session(line: bytes, session: str) -> bool:
     if not session:
         return False
     try:
-        row = json.loads(line)
+        row = json.loads(line.decode("utf-8", errors="replace"))
     except ValueError:
         return False
     return isinstance(row, dict) and row.get("session") == session
