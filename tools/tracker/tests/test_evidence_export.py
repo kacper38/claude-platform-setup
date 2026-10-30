@@ -87,8 +87,10 @@ def make_api(tracker, in_range_sha="bbb"):
             "body": "- [ ] later"},
     }
     done = tracker.mark("done", by="kacper", merge_sha=in_range_sha, pr="https://x/pull/12") + "\nDone."
-    comments = {5: [{"user": {"login": "kacper"}, "created_at": "2026-10-29T13:05:00Z", "body": done},
-                    {"user": {"login": "someone"}, "created_at": "2026-10-29T13:06:00Z", "body": "plain comment"}]}
+    plain = {"user": {"login": "someone"}, "created_at": "2026-10-29T13:06:00Z", "body": "plain comment"}
+    # 100 plain comments fill page 1; the done marker is the 101st, visible only when paging continues
+    comments = {5: {1: [plain] * 100, 2: [{"user": {"login": "kacper"}, "created_at": "2026-10-29T13:05:00Z",
+                                           "body": done}]}}
     calls = []
 
     def api(path, **params):
@@ -99,9 +101,13 @@ def make_api(tracker, in_range_sha="bbb"):
         if path == f"repos/{repo}/pulls/12":
             return {"merged_by": {"login": "kacper"}}
         if path == f"repos/{repo}/pulls/12/reviews":
+            if params.get("page", 1) > 1:
+                return []
             return [{"user": {"login": "reviewer"}, "state": "APPROVED", "submitted_at": "2026-10-29T12:50:00Z",
                      "commit_id": "abc"}]
         if path == f"repos/{repo}/commits/{in_range_sha}/check-runs":
+            if params.get("page", 1) > 1:
+                return {"total_count": 2, "check_runs": []}
             return {"total_count": 2, "check_runs": [
                 {"name": "ci", "status": "completed", "conclusion": "success", "app": {"slug": "github-actions"},
                  "started_at": "2026-10-29T13:01:00Z", "completed_at": "2026-10-29T13:02:00Z",
@@ -119,7 +125,10 @@ def make_api(tracker, in_range_sha="bbb"):
                     {"number": 15, "closed_at": None}]
         if path.startswith(f"repos/{repo}/issues/"):
             n = int(path.split("/")[4])
-            return comments.get(n, []) if path.endswith("/comments") else issues[n]
+            if path.endswith("/comments"):
+                assert params["per_page"] == 100
+                return comments.get(n, {}).get(params.get("page", 1), [])
+            return issues[n]
         if path == f"repos/{repo}/rulesets":
             return [{"id": 1, "name": "main"}]
         if path == f"repos/{repo}/rulesets/1":
@@ -167,7 +176,7 @@ def test_collect_assembles_prs_issues_rulesets_and_captures(ev, tracker, tmp_pat
     assert five["type"] == "todo" and five["status"] == "done" and five["closed_by"] == "kacper"
     assert five["acceptance"] == [{"checked": True, "text": "one"}, {"checked": False, "text": "two"}]
     assert five["markers"] == [{"kind": "done", "by": "kacper", "merge_sha": "bbb", "pr": "https://x/pull/12",
-                                "author": "kacper"}]
+                                "author": "kacper"}], "the marker on page 2 of the comments is read"
     assert five["pull_requests"] == [12] and rec["issues"][1]["pull_requests"] == []
     assert rec["issues"][2]["state"] == "open" and rec["issues"][2]["pull_requests"] == [12]
     assert rec["rulesets"] == [{"id": 1, "name": "main", "target": "branch", "enforcement": "active",

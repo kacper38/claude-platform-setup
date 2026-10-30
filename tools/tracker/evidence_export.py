@@ -182,9 +182,20 @@ def paged(api: Callable, path: str, stop: Optional[Callable] = None, **params):
         page += 1
 
 
+def check_runs(api: Callable, repo: str, sha: str) -> list:
+    """Every check run on a commit (the endpoint wraps its list, so `paged` does not fit)."""
+    runs, page = [], 1
+    while True:
+        batch = (api(f"repos/{repo}/commits/{sha}/check-runs", per_page=PER_PAGE, page=page) or {}).get("check_runs")
+        runs += batch or []
+        if len(batch or []) < PER_PAGE:
+            return runs
+        page += 1
+
+
 def _issue_record(api: Callable, repo: str, number: int) -> dict:
     d = api(f"repos/{repo}/issues/{number}")
-    comments = api(f"repos/{repo}/issues/{number}/comments", per_page=PER_PAGE)
+    comments = list(paged(api, f"repos/{repo}/issues/{number}/comments"))
     issue = tracker.Issue(
         number=int(d["number"]), title=d.get("title", ""), body=d.get("body") or "",
         labels=[lb["name"] for lb in d.get("labels", [])], state=str(d.get("state", "")).lower(),
@@ -229,8 +240,8 @@ def collect(api: Callable, git: Callable, repo: str, frm: str, to: str, captures
             continue
         n = int(pr["number"])
         detail = api(f"repos/{repo}/pulls/{n}")
-        reviews = api(f"repos/{repo}/pulls/{n}/reviews", per_page=PER_PAGE) or []
-        runs = (api(f"repos/{repo}/commits/{pr['merge_commit_sha']}/check-runs", per_page=PER_PAGE) or {})
+        reviews = list(paged(api, f"repos/{repo}/pulls/{n}/reviews"))
+        runs = check_runs(api, repo, pr["merge_commit_sha"])
         prs.append({
             "number": n,
             "title": pr.get("title", ""),
@@ -247,7 +258,7 @@ def collect(api: Callable, git: Callable, repo: str, frm: str, to: str, captures
             "checks": [{"name": c.get("name"), "status": c.get("status"), "conclusion": c.get("conclusion"),
                         "app": (c.get("app") or {}).get("slug"), "started_at": c.get("started_at"),
                         "completed_at": c.get("completed_at"), "url": c.get("html_url")}
-                       for c in runs.get("check_runs", [])],
+                       for c in runs],
         })
     prs.sort(key=lambda p: p["number"])
     numbers = {ref for p in prs for ref in p["refs"]}
