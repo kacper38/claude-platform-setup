@@ -1,6 +1,6 @@
 # System description — claude-platform-setup
 
-Status: 2026-10-29, after step 3.6 (2.8 dogfood issues pending the owner's labels-sync; 3.4 remote and user-scope hooks pending the owner) of `docs/PLAN-2026-10-mature-setup.md`.
+Status: 2026-10-30, after step 3.7 (3.4 remote and user-scope hooks, the `test-removal-ok` label and Q6 pending the owner) of `docs/PLAN-2026-10-mature-setup.md`.
 Components marked *planned* do not exist yet; the plan step that creates them is named.
 
 ## Purpose
@@ -27,7 +27,10 @@ external verification with shown output, decisions recorded.
 | `tools/egress/egress_screen.py` | exists (3.2) | `fresh-review`, `gemini-review`, anything that sends material out | the material, held or sent, never dropped |
 | `bin/fresh-review` + `tools/review/prompt.md` (= `.github/instructions/review.instructions.md`) | exists (3.3) | `claude -p` at home (Opus, no tools, JSON schema); Copilot code review at work | branch diff; receipt `.git/fresh-review/<sha>.json` |
 | `tools/memory/memstore.py` + `~/.claude/memory-store.git` | exists (3.4 store + hook + push allowlist; 3.5 schema, `validate`, `index`, `triage`, `deprecate`) | Claude Code only: PostToolUse hook commits and validates, SessionStart digest | memory files under `~/.claude/projects/*/memory/`; one commit per write; push off until `KZ_MEMORY_PUSH` and a private remote |
-| `tools/telemetry/ledger.py` + `prices.json` | exists (3.6) | Claude Code SessionEnd hook; humans (`ledger.py cost --days 7`) | `~/.claude/telemetry/sessions-YYYY-MM.jsonl`: per-model tokens and cost, subagent share, spawns, parse errors; local only |
+| `tools/telemetry/ledger.py` + `prices.json` | exists (3.6; 3.7 one line per session id) | Claude Code SessionEnd hook; humans (`ledger.py cost --days 7`) | `~/.claude/telemetry/sessions-YYYY-MM.jsonl`: per-model tokens and cost, subagent share, spawns, parse errors; local only |
+| `tools/testguard/check-test-tampering.sh` + `testguard.py` | exists (3.7; kit script + pytest rules) | PostToolUse in both harnesses when a Write/Edit/Bash names a test file; CI job `guards` | `git diff` vs the base (working tree in the hook); findings as hook feedback or a red check; no network from the hook |
+| `tools/scan/latest_tag.py` | exists (3.7) | PostToolUse in both harnesses on a written Dockerfile, compose file or workflow; CI job `guards` | the file text only; `:latest` or untagged image references as feedback or a red check |
+| `tools/tracker/evidence_export.py` + `evidence/<tag>/` | exists (3.7) | `validation-evidence` skill; humans; QA reviewers read the pack | `captures.json` (sha256, size, exit code, tool version per captured output) and `change-records.json` (PRs with merge SHAs, reviews, check runs; issues with markers and acceptance boxes; rulesets) from `gh api`, read-only; committed with the release |
 | `~/.claude/telemetry/spawns.jsonl` | exists (2.3) | fan-out rule; humans (`tail`) | one line per subagent spawn: ts, harness, agent, model; local only |
 | `~/.claude/telemetry/decisions.jsonl` | exists (3.6, guard 0.4.1) | `ledger.py cost` (prompts per rule) | one line per ask/deny: ts, verdict, rules, tool, harness, session; no command text; local only |
 
@@ -45,14 +48,15 @@ every tool call in both harnesses.
 
 ## Interfaces
 
-- GitHub via `gh` (issues, labels, PRs, checks); GitHub Actions for CI and `label-lint`; a ruleset on `main` (PR + green `ci`, no force push, no deletion).
+- GitHub via `gh` (issues, labels, PRs, checks, rulesets); GitHub Actions for CI (`test`, `commit-msg`, `guards`, aggregated by `ci`) and `label-lint`; a ruleset on `main` (PR + green `ci`, no force push, no deletion).
 - Claude Code hooks (`.claude/settings.json`) and Copilot hooks (`.github/hooks/*.json`,
-  `.claude/settings.json`): JSON on stdin, `permissionDecision` on stdout, exit 2 = deny.
+  `.claude/settings.json`): JSON on stdin, `permissionDecision` on stdout, exit 2 = deny;
+  PostToolUse feedback as `decision`/`reason` (Claude Code) or `additionalContext` (Copilot), exit 0.
 - `claude -p` for the home fresh-context review (through the egress screen); Copilot code review at work.
 
 ## Data classification
 
-- This repo: public, MIT. No client data, no credentials, no transcripts, no hook captures before redaction.
+- This repo: public, MIT. No client data, no credentials, no transcripts, no hook captures before redaction. `evidence/<tag>/` holds only what GitHub already shows publicly plus check outputs of this repo.
 - Telemetry (`~/.claude/telemetry/`) and raw hook captures: local to the machine; only redacted fixtures are committed.
 - Memory: `~/.claude/memory-store.git` locally, pushed only to a private GitHub repo and only for allowlisted projects; own notes only; client facts never enter memory.
 - Work pilot: only the kit's public files cross over; findings stay in the work repo's own `DECISIONS.md`.
