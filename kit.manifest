@@ -21,6 +21,8 @@ managed .github/instructions/review.instructions.md
 managed tools/memory/memstore.py
 managed tools/telemetry/ledger.py
 managed tools/telemetry/prices.json
+managed tools/testguard/check-test-tampering.sh
+managed tools/testguard/testguard.py
 managed .github/workflows/label-lint.yml
 init    .github/ISSUE_TEMPLATE/task.yml
 init    .github/ISSUE_TEMPLATE/bug.yml
